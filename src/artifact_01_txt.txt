@@ -1,0 +1,6 @@
+Continuous Toxic Flow                       Vistula Batch Clearing
+  [ Tx1 ] -> [ Sandwich ] -> [ Tx2 ]     ===>     [ Batch PDA: Orders Aggregated ]
+         (MEV Extraction)                                       |
+                                                  [ Uniform Clearing Price (UCP) ]
+                                                                |
+                                                  [ Atomic Settlement + Surplus ]

@@ -1,0 +1,10 @@
+vistula-engine QA Test Matrix
+    ✔ 1. Initializes protocol global config (412ms)
+    ✔ 2. Spawns an atomic batch auction session (465ms)
+    ✔ 3. Commits Bid and Ask orders into non-custodial PDA escrows (820ms)
+    ✔ 4. Locks the batch upon slot expiration (1240ms)
+    ✔ 5. Settles batch at Uniform Clearing Price (1:1 UCP = 1_000_000) and dispenses crank bounty (480ms)
+    ✔ 6. Traders claim filled outputs atomically under slippage boundaries (715ms)
+    ✔ 7. Fails gracefully when attempting to double-claim (185ms)
+
+  7 passing (4.32s)
