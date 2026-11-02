@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  vistula-relayer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vistula-relayer-node
+    restart: always
+    environment:
+      - PORT=8080
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - VISTULA_PROGRAM_ID=Vist111111111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=alerts@vistula.network
+      - ADMIN_NOTIFY_EMAIL=sponsor@enterprise.com
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

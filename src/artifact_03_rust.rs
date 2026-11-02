@@ -1,321 +1,262 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("Vist111111111111111111111111111111111111111");
-
-pub const BATCH_SEED: &[u8] = b"batch";
-pub const VAULT_SEED: &[u8] = b"vault";
-pub const ORDER_SEED: &[u8] = b"order";
-pub const CONFIG_SEED: &[u8] = b"config";
-pub const BPS_DENOMINATOR: u64 = 10_000;
+declare_id!("WsV1111111111111111111111111111111111111111");
 
 #[program]
-pub mod vistula_engine {
+pub mod stream_vault {
     use super::*;
 
-    pub fn initialize_protocol(
-        ctx: Context<InitializeProtocol>,
-        protocol_fee_bps: u16,
-        crank_fee_bps: u16,
+    /// Initialize a new streaming and milestone escrow vault.
+    pub fn initialize_escrow(
+        ctx: Context<InitializeEscrow>,
+        escrow_id: u64,
+        total_deposit: u64,
+        streaming_amount: u64,
+        start_time: i64,
+        end_time: i64,
+        milestone_count: u8,
     ) -> Result<()> {
+        require!(total_deposit > 0, VaultError::ZeroAmount);
+        require!(streaming_amount <= total_deposit, VaultError::InvalidStreamAllocation);
+        require!(end_time > start_time, VaultError::InvalidTimeWindow);
+        require!(milestone_count <= 10, VaultError::ExcessiveMilestones);
+
+        let clock = Clock::get()?;
+        let current_time = clock.unix_timestamp;
+        require!(end_time > current_time, VaultError::EndTimeInPast);
+
+        let escrow = &mut ctx.accounts.escrow;
+        escrow.escrow_id = escrow_id;
+        escrow.payer = ctx.accounts.payer.key();
+        escrow.beneficiary = ctx.accounts.beneficiary.key();
+        escrow.arbiter = ctx.accounts.arbiter.key();
+        escrow.mint = ctx.accounts.mint.key();
+        escrow.vault_bump = ctx.bumps.vault_token_account;
+        escrow.escrow_bump = ctx.bumps.escrow;
+
+        escrow.total_deposit = total_deposit;
+        escrow.streaming_amount = streaming_amount;
+        escrow.milestone_amount = total_deposit
+            .checked_sub(streaming_amount)
+            .ok_or(VaultError::MathOverflow)?;
+
+        escrow.start_time = start_time;
+        escrow.end_time = end_time;
+        escrow.streaming_claimed = 0;
+        escrow.milestones_total = milestone_count;
+        escrow.milestones_approved = 0;
+        escrow.milestone_claimed = 0;
+        escrow.is_paused = false;
+        escrow.is_cancelled = false;
+
+        // Transfer funds from payer to vault
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.payer_token_account.to_account_info(),
+            to: ctx.accounts.vault_token_account.to_account_info(),
+            authority: ctx.accounts.payer.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+        token::transfer(cpi_ctx, total_deposit)?;
+
+        emit!(EscrowInitializedEvent {
+            escrow_id,
+            payer: ctx.accounts.payer.key(),
+            beneficiary: ctx.accounts.beneficiary.key(),
+            total_deposit,
+            streaming_amount,
+            start_time,
+            end_time,
+            timestamp: current_time,
+        });
+
+        Ok(())
+    }
+
+    /// Claim accrued funds from the active streaming allocation.
+    pub fn claim_stream(ctx: Context<ClaimStream>) -> Result<()> {
+        let escrow = &mut ctx.accounts.escrow;
+        require!(!escrow.is_paused, VaultError::VaultPaused);
+        require!(!escrow.is_cancelled, VaultError::VaultCancelled);
+
+        let clock = Clock::get()?;
+        let current_time = clock.unix_timestamp;
+        require!(current_time >= escrow.start_time, VaultError::StreamNotStarted);
+
+        let claimable_now = compute_claimable_stream(
+            escrow.streaming_amount,
+            escrow.start_time,
+            escrow.end_time,
+            current_time,
+            escrow.streaming_claimed,
+        )?;
+
+        require!(claimable_now > 0, VaultError::NoClaimableFunds);
+
+        escrow.streaming_claimed = escrow
+            .streaming_claimed
+            .checked_add(claimable_now)
+            .ok_or(VaultError::MathOverflow)?;
+
+        // Execute PDA signed CPI transfer
+        let payer_key = escrow.payer;
+        let escrow_id_bytes = escrow.escrow_id.to_le_bytes();
+        let seeds: &[&[u8]] = &[
+            b"escrow",
+            payer_key.as_ref(),
+            escrow_id_bytes.as_ref(),
+            &[escrow.escrow_bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
+
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.beneficiary_token_account.to_account_info(),
+            authority: escrow.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::transfer(cpi_ctx, claimable_now)?;
+
+        emit!(StreamClaimedEvent {
+            escrow_id: escrow.escrow_id,
+            beneficiary: ctx.accounts.beneficiary.key(),
+            amount: claimable_now,
+            total_stream_claimed: escrow.streaming_claimed,
+            timestamp: current_time,
+        });
+
+        Ok(())
+    }
+
+    /// Approve and release a milestone tranche. Initiated by Payer or Arbiter.
+    pub fn approve_milestone(ctx: Context<ApproveMilestone>, milestone_index: u8) -> Result<()> {
+        let escrow = &mut ctx.accounts.escrow;
+        require!(!escrow.is_cancelled, VaultError::VaultCancelled);
+        require!(escrow.milestones_total > 0, VaultError::NoMilestonesConfigured);
         require!(
-            protocol_fee_bps + crank_fee_bps <= 1000,
-            VistulaError::FeeExceedsMaximum
+            milestone_index == escrow.milestones_approved + 1,
+            VaultError::InvalidMilestoneSequence
         );
-        let config = &mut ctx.accounts.config;
-        config.authority = ctx.accounts.authority.key();
-        config.fee_receiver = ctx.accounts.fee_receiver.key();
-        config.protocol_fee_bps = protocol_fee_bps;
-        config.crank_fee_bps = crank_fee_bps;
-        config.bump = ctx.bumps.config;
-        config.total_batches_created = 0;
+        require!(
+            milestone_index <= escrow.milestones_total,
+            VaultError::MilestoneOutOfBounds
+        );
 
-        emit!(ProtocolInitializedEvent {
-            authority: config.authority,
-            protocol_fee_bps,
-            crank_fee_bps,
-        });
-        Ok(())
-    }
+        let per_milestone_amount = escrow
+            .milestone_amount
+            .checked_div(escrow.milestones_total as u64)
+            .ok_or(VaultError::MathOverflow)?;
 
-    pub fn initialize_batch(
-        ctx: Context<InitializeBatch>,
-        batch_id: u64,
-        duration_slots: u64,
-    ) -> Result<()> {
-        require!(duration_slots >= 2, VistulaError::DurationTooShort);
-        let current_slot = Clock::get()?.slot;
+        escrow.milestones_approved = milestone_index;
+        escrow.milestone_claimed = escrow
+            .milestone_claimed
+            .checked_add(per_milestone_amount)
+            .ok_or(VaultError::MathOverflow)?;
 
-        let batch = &mut ctx.accounts.batch;
-        batch.batch_id = batch_id;
-        batch.creator = ctx.accounts.creator.key();
-        batch.token_a_mint = ctx.accounts.token_a_mint.key();
-        batch.token_b_mint = ctx.accounts.token_b_mint.key();
-        batch.start_slot = current_slot;
-        batch.expiry_slot = current_slot.checked_add(duration_slots).ok_or(VistulaError::MathOverflow)?;
-        batch.state = BatchState::Open;
-        batch.total_bid_volume = 0;
-        batch.total_ask_volume = 0;
-        batch.matched_volume = 0;
-        batch.clearing_price = 0;
-        batch.bump = ctx.bumps.batch;
-        batch.vault_a_bump = ctx.bumps.vault_a;
-        batch.vault_b_bump = ctx.bumps.vault_b;
+        // Execute PDA signed CPI transfer to beneficiary
+        let payer_key = escrow.payer;
+        let escrow_id_bytes = escrow.escrow_id.to_le_bytes();
+        let seeds: &[&[u8]] = &[
+            b"escrow",
+            payer_key.as_ref(),
+            escrow_id_bytes.as_ref(),
+            &[escrow.escrow_bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
 
-        let config = &mut ctx.accounts.config;
-        config.total_batches_created = config.total_batches_created.checked_add(1).ok_or(VistulaError::MathOverflow)?;
+        let cpi_accounts = Transfer {
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.beneficiary_token_account.to_account_info(),
+            authority: escrow.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::transfer(cpi_ctx, per_milestone_amount)?;
 
-        emit!(BatchCreatedEvent {
-            batch_id,
-            token_a: batch.token_a_mint,
-            token_b: batch.token_b_mint,
-            expiry_slot: batch.expiry_slot,
-        });
-
-        Ok(())
-    }
-
-    pub fn commit_order(
-        ctx: Context<CommitOrder>,
-        batch_id: u64,
-        is_bid: bool,
-        deposit_amount: u64,
-        min_output_amount: u64,
-    ) -> Result<()> {
-        let batch = &mut ctx.accounts.batch;
         let clock = Clock::get()?;
-
-        require!(batch.state == BatchState::Open, VistulaError::BatchNotOpen);
-        require!(clock.slot < batch.expiry_slot, VistulaError::BatchExpired);
-        require!(deposit_amount > 0, VistulaError::ZeroAmount);
-        require!(min_output_amount > 0, VistulaError::ZeroAmount);
-
-        let order = &mut ctx.accounts.order;
-        order.batch_id = batch_id;
-        order.trader = ctx.accounts.trader.key();
-        order.is_bid = is_bid;
-        order.deposited_amount = deposit_amount;
-        order.min_output_amount = min_output_amount;
-        order.claimed = false;
-        order.bump = ctx.bumps.order;
-
-        if is_bid {
-            batch.total_bid_volume = batch
-                .total_bid_volume
-                .checked_add(deposit_amount)
-                .ok_or(VistulaError::MathOverflow)?;
-
-            token::transfer(
-                CpiContext::new(
-                    ctx.accounts.token_program.to_account_info(),
-                    Transfer {
-                        from: ctx.accounts.trader_token_account.to_account_info(),
-                        to: ctx.accounts.vault_a.to_account_info(),
-                        authority: ctx.accounts.trader.to_account_info(),
-                    },
-                ),
-                deposit_amount,
-            )?;
-        } else {
-            batch.total_ask_volume = batch
-                .total_ask_volume
-                .checked_add(deposit_amount)
-                .ok_or(VistulaError::MathOverflow)?;
-
-            token::transfer(
-                CpiContext::new(
-                    ctx.accounts.token_program.to_account_info(),
-                    Transfer {
-                        from: ctx.accounts.trader_token_account.to_account_info(),
-                        to: ctx.accounts.vault_b.to_account_info(),
-                        authority: ctx.accounts.trader.to_account_info(),
-                    },
-                ),
-                deposit_amount,
-            )?;
-        }
-
-        emit!(OrderCommittedEvent {
-            batch_id,
-            trader: order.trader,
-            is_bid,
-            amount: deposit_amount,
-            min_output: min_output_amount,
+        emit!(MilestoneReleasedEvent {
+            escrow_id: escrow.escrow_id,
+            milestone_index,
+            approved_by: ctx.accounts.authority.key(),
+            amount: per_milestone_amount,
+            timestamp: clock.unix_timestamp,
         });
 
         Ok(())
     }
 
-    pub fn lock_batch(ctx: Context<LockBatch>, _batch_id: u64) -> Result<()> {
-        let batch = &mut ctx.accounts.batch;
+    /// Emergency cancellation or mutual refund. Any unstreamed/unclaimed balance is returned to Payer.
+    pub fn cancel_vault(ctx: Context<CancelVault>) -> Result<()> {
+        let escrow = &mut ctx.accounts.escrow;
+        require!(!escrow.is_cancelled, VaultError::AlreadyCancelled);
+
         let clock = Clock::get()?;
+        let current_time = clock.unix_timestamp;
 
-        require!(batch.state == BatchState::Open, VistulaError::InvalidState);
-        require!(clock.slot >= batch.expiry_slot, VistulaError::BatchStillActive);
+        // Auto-settle streaming accrued up to this exact cancellation second for beneficiary
+        let accrued_stream = compute_claimable_stream(
+            escrow.streaming_amount,
+            escrow.start_time,
+            escrow.end_time,
+            current_time,
+            escrow.streaming_claimed,
+        )?;
 
-        batch.state = BatchState::Locked;
+        let payer_key = escrow.payer;
+        let escrow_id_bytes = escrow.escrow_id.to_le_bytes();
+        let seeds: &[&[u8]] = &[
+            b"escrow",
+            payer_key.as_ref(),
+            escrow_id_bytes.as_ref(),
+            &[escrow.escrow_bump],
+        ];
+        let signer_seeds = &[&seeds[..]];
 
-        emit!(BatchLockedEvent {
-            batch_id: batch.batch_id,
-            slot: clock.slot,
-        });
-        Ok(())
-    }
+        let cpi_program = ctx.accounts.token_program.to_account_info();
 
-    pub fn settle_batch(
-        ctx: Context<SettleBatch>,
-        batch_id: u64,
-        clearing_price_scaled: u64, // Clearing price represented as (Token B / Token A) * 1e6
-    ) -> Result<()> {
-        let batch = &mut ctx.accounts.batch;
-        require!(batch.state == BatchState::Locked, VistulaError::BatchNotLocked);
-        require!(clearing_price_scaled > 0, VistulaError::InvalidClearingPrice);
+        if accrued_stream > 0 {
+            escrow.streaming_claimed = escrow
+                .streaming_claimed
+                .checked_add(accrued_stream)
+                .ok_or(VaultError::MathOverflow)?;
 
-        // Price scale is 1_000_000 (1e6)
-        let scale = 1_000_000u128;
-        let total_bid = batch.total_bid_volume as u128;
-        let total_ask = batch.total_ask_volume as u128;
-
-        // Implied B requested by bids = (total_bid * clearing_price_scaled) / 1e6
-        let demand_in_b = total_bid
-            .checked_mul(clearing_price_scaled as u128)
-            .ok_or(VistulaError::MathOverflow)?
-            .checked_div(scale)
-            .ok_or(VistulaError::MathOverflow)?;
-
-        let matched_b = demand_in_b.min(total_ask);
-        let matched_a = matched_b
-            .checked_mul(scale)
-            .ok_or(VistulaError::MathOverflow)?
-            .checked_div(clearing_price_scaled as u128)
-            .ok_or(VistulaError::MathOverflow)?;
-
-        batch.matched_volume = matched_a as u64;
-        batch.clearing_price = clearing_price_scaled;
-        batch.state = BatchState::Settled;
-
-        let crank_fee_rate = ctx.accounts.config.crank_fee_bps as u64;
-        let crank_bounty_a = (matched_a as u64)
-            .checked_mul(crank_fee_rate)
-            .unwrap_or(0)
-            .checked_div(BPS_DENOMINATOR)
-            .unwrap_or(0);
-
-        if crank_bounty_a > 0 {
-            let batch_id_bytes = batch_id.to_le_bytes();
-            let signer_seeds: &[&[&[u8]]] = &[&[
-                VAULT_SEED,
-                batch_id_bytes.as_ref(),
-                ctx.accounts.batch.token_a_mint.as_ref(),
-                &[batch.vault_a_bump],
-            ]];
-
-            token::transfer(
-                CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    Transfer {
-                        from: ctx.accounts.vault_a.to_account_info(),
-                        to: ctx.accounts.crank_token_a_account.to_account_info(),
-                        authority: ctx.accounts.vault_a.to_account_info(),
-                    },
-                    signer_seeds,
-                ),
-                crank_bounty_a,
-            )?;
+            let cpi_to_beneficiary = Transfer {
+                from: ctx.accounts.vault_token_account.to_account_info(),
+                to: ctx.accounts.beneficiary_token_account.to_account_info(),
+                authority: escrow.to_account_info(),
+            };
+            let cpi_ctx_ben = CpiContext::new_with_signer(
+                cpi_program.clone(),
+                cpi_to_beneficiary,
+                signer_seeds,
+            );
+            token::transfer(cpi_ctx_ben, accrued_stream)?;
         }
 
-        emit!(BatchSettledEvent {
-            batch_id,
-            clearing_price: clearing_price_scaled,
-            matched_volume_a: matched_a as u64,
-            crank_bounty: crank_bounty_a,
-        });
-
-        Ok(())
-    }
-
-    pub fn claim_order_fill(ctx: Context<ClaimOrderFill>, batch_id: u64) -> Result<()> {
-        let batch = &ctx.accounts.batch;
-        let order = &mut ctx.accounts.order;
-
-        require!(batch.state == BatchState::Settled, VistulaError::BatchNotSettled);
-        require!(!order.claimed, VistulaError::OrderAlreadyClaimed);
-
-        order.claimed = true;
-
-        let scale = 1_000_000u128;
-        let price = batch.clearing_price as u128;
-
-        let batch_id_bytes = batch_id.to_le_bytes();
-        let seeds_vault_a: &[&[&[u8]]] = &[&[
-            VAULT_SEED,
-            batch_id_bytes.as_ref(),
-            batch.token_a_mint.as_ref(),
-            &[batch.vault_a_bump],
-        ]];
-        let seeds_vault_b: &[&[&[u8]]] = &[&[
-            VAULT_SEED,
-            batch_id_bytes.as_ref(),
-            batch.token_b_mint.as_ref(),
-            &[batch.vault_b_bump],
-        ]];
-
-        if order.is_bid {
-            let deposit_amount = order.deposited_amount as u128;
-            let output_amount = deposit_amount
-                .checked_mul(price)
-                .ok_or(VistulaError::MathOverflow)?
-                .checked_div(scale)
-                .ok_or(VistulaError::MathOverflow)? as u64;
-
-            require!(
-                output_amount >= order.min_output_amount,
-                VistulaError::SlippageExceeded
-            );
-
-            token::transfer(
-                CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    Transfer {
-                        from: ctx.accounts.vault_b.to_account_info(),
-                        to: ctx.accounts.trader_receive_account.to_account_info(),
-                        authority: ctx.accounts.vault_b.to_account_info(),
-                    },
-                    seeds_vault_b,
-                ),
-                output_amount,
-            )?;
-        } else {
-            let deposit_amount = order.deposited_amount as u128;
-            let output_amount = deposit_amount
-                .checked_mul(scale)
-                .ok_or(VistulaError::MathOverflow)?
-                .checked_div(price)
-                .ok_or(VistulaError::MathOverflow)? as u64;
-
-            require!(
-                output_amount >= order.min_output_amount,
-                VistulaError::SlippageExceeded
-            );
-
-            token::transfer(
-                CpiContext::new_with_signer(
-                    ctx.accounts.token_program.to_account_info(),
-                    Transfer {
-                        from: ctx.accounts.vault_a.to_account_info(),
-                        to: ctx.accounts.trader_receive_account.to_account_info(),
-                        authority: ctx.accounts.vault_a.to_account_info(),
-                    },
-                    seeds_vault_a,
-                ),
-                output_amount,
-            )?;
+        // Return all remaining vault tokens back to payer
+        let remaining_balance = ctx.accounts.vault_token_account.amount;
+        if remaining_balance > 0 {
+            let cpi_to_payer = Transfer {
+                from: ctx.accounts.vault_token_account.to_account_info(),
+                to: ctx.accounts.payer_token_account.to_account_info(),
+                authority: escrow.to_account_info(),
+            };
+            let cpi_ctx_payer =
+                CpiContext::new_with_signer(cpi_program, cpi_to_payer, signer_seeds);
+            token::transfer(cpi_ctx_payer, remaining_balance)?;
         }
 
-        emit!(OrderClaimedEvent {
-            batch_id,
-            trader: order.trader,
-            is_bid: order.is_bid,
+        escrow.is_cancelled = true;
+
+        emit!(VaultCancelledEvent {
+            escrow_id: escrow.escrow_id,
+            cancelled_by: ctx.accounts.authority.key(),
+            accrued_paid_to_beneficiary: accrued_stream,
+            refunded_to_payer: remaining_balance,
+            timestamp: current_time,
         });
 
         Ok(())
@@ -323,306 +264,318 @@ pub mod vistula_engine {
 }
 
 // -----------------------------------------------------------------------------
-// Account Contexts
+// Helper Pure Functions
 // -----------------------------------------------------------------------------
+pub fn compute_claimable_stream(
+    total_stream: u64,
+    start_time: i64,
+    end_time: i64,
+    current_time: i64,
+    already_claimed: u64,
+) -> Result<u64> {
+    if current_time <= start_time {
+        return Ok(0);
+    }
 
-#[derive(Accounts)]
-pub struct InitializeProtocol<'info> {
-    #[account(
-        init,
-        payer = authority,
-        space = 8 + ProtocolConfig::INIT_SPACE,
-        seeds = [CONFIG_SEED],
-        bump
-    )]
-    pub config: Account<'info, ProtocolConfig>,
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    /// CHECK: Protocol fee treasury safe
-    pub fee_receiver: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
+    let effective_time = if current_time >= end_time {
+        end_time
+    } else {
+        current_time
+    };
+
+    let elapsed = (effective_time - start_time) as u128;
+    let duration = (end_time - start_time) as u128;
+
+    if duration == 0 {
+        return Ok(0);
+    }
+
+    let accrued = (total_stream as u128)
+        .checked_mul(elapsed)
+        .ok_or(VaultError::MathOverflow)?
+        .checked_div(duration)
+        .ok_or(VaultError::MathOverflow)? as u64;
+
+    let claimable = accrued.saturating_sub(already_claimed);
+    Ok(claimable)
 }
 
+// -----------------------------------------------------------------------------
+// Account Validation Contexts
+// -----------------------------------------------------------------------------
 #[derive(Accounts)]
-#[instruction(batch_id: u64)]
-pub struct InitializeBatch<'info> {
+#[instruction(escrow_id: u64)]
+pub struct InitializeEscrow<'info> {
     #[account(
         init,
-        payer = creator,
-        space = 8 + BatchStateAccount::INIT_SPACE,
-        seeds = [BATCH_SEED, batch_id.to_le_bytes().as_ref()],
+        payer = payer,
+        space = 8 + EscrowAccount::INIT_SPACE,
+        seeds = [b"escrow", payer.key().as_ref(), escrow_id.to_le_bytes().as_ref()],
         bump
     )]
-    pub batch: Account<'info, BatchStateAccount>,
-    #[account(mut, seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, ProtocolConfig>,
-    pub token_a_mint: Account<'info, Mint>,
-    pub token_b_mint: Account<'info, Mint>,
-    #[account(
-        init,
-        payer = creator,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), token_a_mint.key().as_ref()],
-        bump,
-        token::mint = token_a_mint,
-        token::authority = vault_a
-    )]
-    pub vault_a: Account<'info, TokenAccount>,
-    #[account(
-        init,
-        payer = creator,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), token_b_mint.key().as_ref()],
-        bump,
-        token::mint = token_b_mint,
-        token::authority = vault_b
-    )]
-    pub vault_b: Account<'info, TokenAccount>,
+    pub escrow: Account<'info, EscrowAccount>,
+
     #[account(mut)]
-    pub creator: Signer<'info>,
+    pub payer: Signer<'info>,
+
+    /// CHECK: Beneficiary is destination wallet, non-signer during init
+    pub beneficiary: UncheckedAccount<'info>,
+
+    /// CHECK: Arbiter can approve milestones or arbitrate disputes
+    pub arbiter: UncheckedAccount<'info>,
+
+    pub mint: Account<'info, Mint>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = payer,
+    )]
+    pub payer_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        init,
+        payer = payer,
+        seeds = [b"vault_token", escrow.key().as_ref()],
+        bump,
+        token::mint = mint,
+        token::authority = escrow,
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
-#[instruction(batch_id: u64)]
-pub struct CommitOrder<'info> {
+pub struct ClaimStream<'info> {
     #[account(
         mut,
-        seeds = [BATCH_SEED, batch_id.to_le_bytes().as_ref()],
-        bump = batch.bump
+        seeds = [b"escrow", escrow.payer.as_ref(), escrow.escrow_id.to_le_bytes().as_ref()],
+        bump = escrow.escrow_bump,
+        has_one = beneficiary,
+        has_one = mint,
     )]
-    pub batch: Account<'info, BatchStateAccount>,
-    #[account(
-        init,
-        payer = trader,
-        space = 8 + EscrowOrder::INIT_SPACE,
-        seeds = [ORDER_SEED, batch_id.to_le_bytes().as_ref(), trader.key().as_ref()],
-        bump
-    )]
-    pub order: Account<'info, EscrowOrder>,
-    #[account(
-        mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_a_mint.as_ref()],
-        bump = batch.vault_a_bump
-    )]
-    pub vault_a: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_b_mint.as_ref()],
-        bump = batch.vault_b_bump
-    )]
-    pub vault_b: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub trader_token_account: Account<'info, TokenAccount>,
-    #[account(mut)]
-    pub trader: Signer<'info>,
-    pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-}
+    pub escrow: Account<'info, EscrowAccount>,
 
-#[derive(Accounts)]
-#[instruction(batch_id: u64)]
-pub struct LockBatch<'info> {
-    #[account(
-        mut,
-        seeds = [BATCH_SEED, batch_id.to_le_bytes().as_ref()],
-        bump = batch.bump
-    )]
-    pub batch: Account<'info, BatchStateAccount>,
-    pub caller: Signer<'info>,
-}
-
-#[derive(Accounts)]
-#[instruction(batch_id: u64)]
-pub struct SettleBatch<'info> {
-    #[account(
-        mut,
-        seeds = [BATCH_SEED, batch_id.to_le_bytes().as_ref()],
-        bump = batch.bump
-    )]
-    pub batch: Account<'info, BatchStateAccount>,
-    #[account(seeds = [CONFIG_SEED], bump = config.bump)]
-    pub config: Account<'info, ProtocolConfig>,
-    #[account(
-        mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_a_mint.as_ref()],
-        bump = batch.vault_a_bump
-    )]
-    pub vault_a: Account<'info, TokenAccount>,
-    #[account(
-        mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_b_mint.as_ref()],
-        bump = batch.vault_b_bump
-    )]
-    pub vault_b: Account<'info, TokenAccount>,
     #[account(mut)]
-    pub crank_token_a_account: Account<'info, TokenAccount>,
-    pub crank: Signer<'info>,
+    pub beneficiary: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"vault_token", escrow.key().as_ref()],
+        bump = escrow.vault_bump,
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = beneficiary,
+    )]
+    pub beneficiary_token_account: Account<'info, TokenAccount>,
+
+    pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
 #[derive(Accounts)]
-#[instruction(batch_id: u64)]
-pub struct ClaimOrderFill<'info> {
-    #[account(
-        seeds = [BATCH_SEED, batch_id.to_le_bytes().as_ref()],
-        bump = batch.bump
-    )]
-    pub batch: Account<'info, BatchStateAccount>,
+pub struct ApproveMilestone<'info> {
     #[account(
         mut,
-        seeds = [ORDER_SEED, batch_id.to_le_bytes().as_ref(), trader.key().as_ref()],
-        bump = order.bump,
-        has_one = trader
+        seeds = [b"escrow", escrow.payer.as_ref(), escrow.escrow_id.to_le_bytes().as_ref()],
+        bump = escrow.escrow_bump,
+        has_one = beneficiary,
+        has_one = mint,
     )]
-    pub order: Account<'info, EscrowOrder>,
+    pub escrow: Account<'info, EscrowAccount>,
+
+    /// Must be Payer or Arbiter
     #[account(
         mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_a_mint.as_ref()],
-        bump = batch.vault_a_bump
+        constraint = authority.key() == escrow.payer || authority.key() == escrow.arbiter @ VaultError::UnauthorizedApprover
     )]
-    pub vault_a: Account<'info, TokenAccount>,
+    pub authority: Signer<'info>,
+
+    /// CHECK: Recipient of milestone payout
+    pub beneficiary: UncheckedAccount<'info>,
+
     #[account(
         mut,
-        seeds = [VAULT_SEED, batch_id.to_le_bytes().as_ref(), batch.token_b_mint.as_ref()],
-        bump = batch.vault_b_bump
+        seeds = [b"vault_token", escrow.key().as_ref()],
+        bump = escrow.vault_bump,
     )]
-    pub vault_b: Account<'info, TokenAccount>,
+    pub vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = beneficiary,
+    )]
+    pub beneficiary_token_account: Account<'info, TokenAccount>,
+
+    pub mint: Account<'info, Mint>,
+    pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+pub struct CancelVault<'info> {
+    #[account(
+        mut,
+        seeds = [b"escrow", escrow.payer.as_ref(), escrow.escrow_id.to_le_bytes().as_ref()],
+        bump = escrow.escrow_bump,
+        has_one = payer,
+        has_one = beneficiary,
+        has_one = mint,
+    )]
+    pub escrow: Account<'info, EscrowAccount>,
+
+    /// Must be Payer or Arbiter
+    #[account(
+        mut,
+        constraint = authority.key() == escrow.payer || authority.key() == escrow.arbiter @ VaultError::UnauthorizedCancellation
+    )]
+    pub authority: Signer<'info>,
+
     #[account(mut)]
-    pub trader_receive_account: Account<'info, TokenAccount>,
-    pub trader: Signer<'info>,
+    pub payer: SystemAccount<'info>,
+
+    /// CHECK: Beneficiary receives accrued stream prior to shutdown
+    pub beneficiary: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"vault_token", escrow.key().as_ref()],
+        bump = escrow.vault_bump,
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = payer,
+    )]
+    pub payer_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = beneficiary,
+    )]
+    pub beneficiary_token_account: Account<'info, TokenAccount>,
+
+    pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
 // -----------------------------------------------------------------------------
-// State Layouts
+// State Schema
 // -----------------------------------------------------------------------------
-
 #[account]
-#[derive(InitSpace)]
-pub struct ProtocolConfig {
-    pub authority: Pubkey,
-    pub fee_receiver: Pubkey,
-    pub protocol_fee_bps: u16,
-    pub crank_fee_bps: u16,
-    pub total_batches_created: u64,
-    pub bump: u8,
+pub struct EscrowAccount {
+    pub escrow_id: u64,          // 8
+    pub payer: Pubkey,           // 32
+    pub beneficiary: Pubkey,     // 32
+    pub arbiter: Pubkey,         // 32
+    pub mint: Pubkey,            // 32
+    pub total_deposit: u64,      // 8
+    pub streaming_amount: u64,   // 8
+    pub milestone_amount: u64,   // 8
+    pub streaming_claimed: u64,  // 8
+    pub milestone_claimed: u64,  // 8
+    pub start_time: i64,         // 8
+    pub end_time: i64,           // 8
+    pub milestones_total: u8,    // 1
+    pub milestones_approved: u8, // 1
+    pub is_paused: bool,         // 1
+    pub is_cancelled: bool,      // 1
+    pub escrow_bump: u8,         // 1
+    pub vault_bump: u8,          // 1
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum BatchState {
-    Open,
-    Locked,
-    Settled,
-    Refundable,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct BatchStateAccount {
-    pub batch_id: u64,
-    pub creator: Pubkey,
-    pub token_a_mint: Pubkey,
-    pub token_b_mint: Pubkey,
-    pub start_slot: u64,
-    pub expiry_slot: u64,
-    pub state: BatchState,
-    pub total_bid_volume: u64,
-    pub total_ask_volume: u64,
-    pub matched_volume: u64,
-    pub clearing_price: u64,
-    pub bump: u8,
-    pub vault_a_bump: u8,
-    pub vault_b_bump: u8,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct EscrowOrder {
-    pub batch_id: u64,
-    pub trader: Pubkey,
-    pub is_bid: bool,
-    pub deposited_amount: u64,
-    pub min_output_amount: u64,
-    pub claimed: bool,
-    pub bump: u8,
+impl EscrowAccount {
+    pub const INIT_SPACE: usize = 8 + 32 + 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1 + 1;
 }
 
 // -----------------------------------------------------------------------------
-// Events & Errors
+// Events
 // -----------------------------------------------------------------------------
-
 #[event]
-pub struct ProtocolInitializedEvent {
-    pub authority: Pubkey,
-    pub protocol_fee_bps: u16,
-    pub crank_fee_bps: u16,
+pub struct EscrowInitializedEvent {
+    pub escrow_id: u64,
+    pub payer: Pubkey,
+    pub beneficiary: Pubkey,
+    pub total_deposit: u64,
+    pub streaming_amount: u64,
+    pub start_time: i64,
+    pub end_time: i64,
+    pub timestamp: i64,
 }
 
 #[event]
-pub struct BatchCreatedEvent {
-    pub batch_id: u64,
-    pub token_a: Pubkey,
-    pub token_b: Pubkey,
-    pub expiry_slot: u64,
-}
-
-#[event]
-pub struct OrderCommittedEvent {
-    pub batch_id: u64,
-    pub trader: Pubkey,
-    pub is_bid: bool,
+pub struct StreamClaimedEvent {
+    pub escrow_id: u64,
+    pub beneficiary: Pubkey,
     pub amount: u64,
-    pub min_output: u64,
+    pub total_stream_claimed: u64,
+    pub timestamp: i64,
 }
 
 #[event]
-pub struct BatchLockedEvent {
-    pub batch_id: u64,
-    pub slot: u64,
+pub struct MilestoneReleasedEvent {
+    pub escrow_id: u64,
+    pub milestone_index: u8,
+    pub approved_by: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
 }
 
 #[event]
-pub struct BatchSettledEvent {
-    pub batch_id: u64,
-    pub clearing_price: u64,
-    pub matched_volume_a: u64,
-    pub crank_bounty: u64,
+pub struct VaultCancelledEvent {
+    pub escrow_id: u64,
+    pub cancelled_by: Pubkey,
+    pub accrued_paid_to_beneficiary: u64,
+    pub refunded_to_payer: u64,
+    pub timestamp: i64,
 }
 
-#[event]
-pub struct OrderClaimedEvent {
-    pub batch_id: u64,
-    pub trader: Pubkey,
-    pub is_bid: bool,
-}
-
+// -----------------------------------------------------------------------------
+// Error Codes
+// -----------------------------------------------------------------------------
 #[error_code]
-pub enum VistulaError {
-    #[msg("Protocol and crank fee combination exceeds system max ceiling (1000 bps)")]
-    FeeExceedsMaximum,
-    #[msg("Batch duration must be at least 2 slots")]
-    DurationTooShort,
-    #[msg("Batch is not in Open status")]
-    BatchNotOpen,
-    #[msg("Current slot has exceeded the batch expiration boundary")]
-    BatchExpired,
-    #[msg("Amount must be greater than zero")]
+pub enum VaultError {
+    #[msg("Total deposit amount must be greater than zero.")]
     ZeroAmount,
-    #[msg("Operation requires Batch to be in Locked status")]
-    BatchNotLocked,
-    #[msg("Current slot is lower than batch expiry boundary")]
-    BatchStillActive,
-    #[msg("Invalid clearing price submitted")]
-    InvalidClearingPrice,
-    #[msg("Batch has not settled")]
-    BatchNotSettled,
-    #[msg("Order output falls below strict min_output slippage limit")]
-    SlippageExceeded,
-    #[msg("Order fill has already been claimed")]
-    OrderAlreadyClaimed,
-    #[msg("Arithmetic overflow or underflow detected")]
+    #[msg("Streaming allocation cannot exceed total escrow deposit.")]
+    InvalidStreamAllocation,
+    #[msg("Vault end time must be greater than start time.")]
+    InvalidTimeWindow,
+    #[msg("Escrow end time cannot be set in the past.")]
+    EndTimeInPast,
+    #[msg("Milestone count exceeds maximum configured limit of 10.")]
+    ExcessiveMilestones,
+    #[msg("Vault is currently paused by arbiter.")]
+    VaultPaused,
+    #[msg("Vault has been cancelled.")]
+    VaultCancelled,
+    #[msg("Streaming period has not started yet.")]
+    StreamNotStarted,
+    #[msg("No claimable streaming funds available at this timestamp.")]
+    NoClaimableFunds,
+    #[msg("Vault does not have milestone tranches configured.")]
+    NoMilestonesConfigured,
+    #[msg("Milestones must be approved in sequential order.")]
+    InvalidMilestoneSequence,
+    #[msg("Milestone index is out of bounds.")]
+    MilestoneOutOfBounds,
+    #[msg("Signer is not authorized to approve milestones for this escrow.")]
+    UnauthorizedApprover,
+    #[msg("Signer is not authorized to cancel or arbitrate this escrow.")]
+    UnauthorizedCancellation,
+    #[msg("Escrow is already cancelled.")]
+    AlreadyCancelled,
+    #[msg("Numerical arithmetic overflow detected.")]
     MathOverflow,
-    #[msg("Invalid state transition")]
-    InvalidState,
 }

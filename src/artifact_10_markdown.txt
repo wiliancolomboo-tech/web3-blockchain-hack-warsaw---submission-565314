@@ -1,0 +1,16 @@
+🧵 1/3
+Thrilled to unveil Varsovia StreamSafe for the Blockchain Hack Warsaw! 🇵🇱⚡
+Say goodbye to disputed hackathon bounties and opaque B2B payouts.
+We built an institutional milestone escrow on @solana with on-chain SHA-256 deliverable commit-reveals and automated settlement.
+
+🧵 2/3
+Under the hood:
+🔒 Zero counterparty PDA vaults built with Anchor 0.30
+📜 Tamper-proof milestone fingerprinting
+⚖️ Built-in arbiter resolution logic
+📡 Real-time enterprise webhook pipeline dispatching instant audit notifications via @resend & Discord/Slack!
+
+🧵 3/3
+Complete test suite, non-custodial architecture, and single-click Docker deployment ready for enterprise adoption.
+Check out the full repository and live demo 🚀
+#Solana #SolanaDevs #BlockchainWarsaw #Web3Security #Rust

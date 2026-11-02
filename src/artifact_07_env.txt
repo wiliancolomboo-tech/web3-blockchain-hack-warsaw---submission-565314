@@ -1,0 +1,8 @@
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_WS_URL=wss://api.devnet.solana.com
+PROGRAM_ID=VShieLd11111111111111111111111111111111111
+RESEND_API_KEY=re_live_production_key_here
+RESEND_FROM_EMAIL=settlements@enterprise-varsovian.com
+FINANCE_TEAM_EMAIL=finance-desk@enterprise-varsovian.com
+SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+PORT=8080

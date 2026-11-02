@@ -1,0 +1,6 @@
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=SV1st1a7hJ5ZkL8N1gYvBwP2o3Q4R5S6T7U8V9W0X1Y
+RESEND_API_KEY=re_123456789abcdef0123456789
+RESEND_FROM_EMAIL=settlement@solvistula.io
+ENTERPRISE_ALERT_EMAIL=ops@company.com
+DISCORD_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

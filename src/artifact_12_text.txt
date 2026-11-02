@@ -1,0 +1,8 @@
+3/4 🛡️ Battle-tested with full @coral_xyz Anchor test coverage, turnkey Docker deployment, and real-time off-chain telemetry.
+
+Decentralizing hackathon integrity for the next generation of builders.
+
+Check out our full open-source repo & live demo: 
+👉 github.com/verihack/verihack-protocol
+
+#Solana #SolanaDevs #Web3Warsaw @SolanaFndn

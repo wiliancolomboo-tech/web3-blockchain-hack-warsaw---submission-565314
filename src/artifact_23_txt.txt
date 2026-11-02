@@ -1,0 +1,7 @@
+Built, tested, and containerized for turnkey enterprise adoption. 
+
+Full Anchor contract code, complete TS orchestration daemon, and 100% test coverage are live and open source on GitHub.
+
+Excited to empower the next wave of Polish & European builders at #BlockchainHackWarsaw! @SolanaFndn @solana 🚀
+
+Link: https://github.com/merit-stream/warsaw-protocol

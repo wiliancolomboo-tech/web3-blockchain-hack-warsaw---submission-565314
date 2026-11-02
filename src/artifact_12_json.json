@@ -1,0 +1,7 @@
+{
+  "status": "healthy",
+  "syncedSlot": 298102914,
+  "cluster": "devnet",
+  "activeListeners": ["HackathonInitialized", "FundsDeposited", "ProjectSubmitted", "WinnersFinalized", "PrizeClaimed"],
+  "uptimeSeconds": 14285
+}

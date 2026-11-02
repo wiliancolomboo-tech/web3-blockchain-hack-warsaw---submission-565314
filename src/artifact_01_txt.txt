@@ -1,6 +1,23 @@
-Continuous Toxic Flow                       Vistula Batch Clearing
-  [ Tx1 ] -> [ Sandwich ] -> [ Tx2 ]     ===>     [ Batch PDA: Orders Aggregated ]
-         (MEV Extraction)                                       |
-                                                  [ Uniform Clearing Price (UCP) ]
-                                                                |
-                                                  [ Atomic Settlement + Surplus ]
+[Sponsor / Enterprise]
+                                         │ Deposits Capital into Vault PDA
+                                         ▼
+                     ┌───────────────────────────────────────┐
+                     │   Varsovia StreamSafe Anchor Program  │
+                     │  - SHA-256 Deliverable Commitment     │
+                     │  - Multi-Stage Milestone Engine       │
+                     │  - Arbiter-Veto & Slashed Restitution │
+                     └───────────────────────────────────────┘
+                                  │             │
+        Deliverable Hashed & Submitted          │ Milestone Released
+                                  │             │
+                                  ▼             ▼
+                           [Contributor]   [Institutional Vault]
+                                  │             │
+                                  └──────┬──────┘
+                                         ▼
+                       ┌───────────────────────────────────┐
+                       │  StreamSafe Gateway (Node.js/TS)  │
+                       │   - Real-time Anchor WS Listener  │
+                       │   - Resend Transactional Email    │
+                       │   - Discord/Slack Webhook Dispatch│
+                       └───────────────────────────────────┘

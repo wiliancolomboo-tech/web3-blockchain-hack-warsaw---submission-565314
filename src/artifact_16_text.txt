@@ -1,0 +1,5 @@
+2/3 🛠️ Architecture Highlights:
+• Non-custodial PDA token vaults with multi-stage release schedules
+• Built on Anchor 0.30+ with deterministic cryptographic proof digests (SHA-256)
+• Tri-party arbitration engine with automatic deadline failsafes
+• Live telemetry bridge streaming on-chain events straight into @resendlabs & Slack! ⚡

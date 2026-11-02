@@ -1,0 +1,12 @@
++-------------------------------+-------------------------------------------+-----------------------------------------------+
+| Attack Vector                 | Vulnerability Mode                        | Vortex Hardened Guard                         |
++-------------------------------+-------------------------------------------+-----------------------------------------------+
+| Signer Impersonation          | Malicious solver fills user output token  | `creator_output_account.owner ==              |
+|                               | to attacker-controlled destination.       |  intent.creator` constraint check.            |
+| Clock Manipulation            | Validator skews slot timestamp backward.  | Enforces monotonic Unix timestamp check;      |
+|                               |                                           | auction delta strictly bounded >= 0.          |
+| Arithmetic Overflow           | 64-bit integer overflow in Dutch decay.   | All calculations cast to u128 and governed   |
+|                               |                                           | by `.checked_mul()`, `.checked_div()`.        |
+| Front-Running Settlement      | Solver underdelivers minimum output token | Strict check: `amount_out_provided >=         |
+|                               | at current decay slot.                    |  min_amount_out_required`.                    |
++-------------------------------+-------------------------------------------+-----------------------------------------------+

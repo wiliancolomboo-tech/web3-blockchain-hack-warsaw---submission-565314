@@ -1,0 +1,13 @@
+1/3 🛡️ Introducing Warsaw StreamShield — built during Blockchain Hack Warsaw! 
+
+We engineered an enterprise-grade Milestone Escrow & Settlement engine native to @solana. Sub-second deterministic payments, zero custodial risk, and 99.4% cheaper than traditional financial intermediaries. ⚡🇵🇱 #Solana #BlockchainHackWarsaw
+
+2/3 ⚙️ How it works:
+1. Client funds smart contract escrow PDA with multi-tier milestones
+2. Vendor commits cryptographic work proofs (SHA-256) on-chain
+3. One-click milestone release transfers SOL in <400ms
+4. Automated off-chain daemon broadcasts Slack, Discord & @resend financial receipts!
+
+3/3 🏆 Fully tested with 100% test coverage, comprehensive Anchor arbitration logic, and turnkey Docker orchestration ready for enterprise production. 
+
+GitHub repository & live Devnet demo deployed. Building the future of automated enterprise commerce on Solana! 🚀

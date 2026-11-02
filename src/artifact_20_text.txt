@@ -1,0 +1,5 @@
+🚨 400ms block times on @solana make it the fastest chain in Web3, but when liquidity pools face flash-drains or oracle manipulation, human multisig response times can't keep up.
+
+That's why we built #SolGuardWarsaw for @Blockchain_Hack Warsaw! 🇵🇱⚡
+
+An autonomous on-chain circuit breaker with real-time enterprise SecOps dispatch. 🧵👇

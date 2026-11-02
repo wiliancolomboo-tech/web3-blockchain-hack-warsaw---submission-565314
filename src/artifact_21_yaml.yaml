@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  vistula-watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vistula-enterprise-daemon
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - VISTULA_PROGRAM_ID=Vist111111111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AUDIT_EMAIL_TO=${AUDIT_EMAIL_TO:-treasury@enterprise.corp}
+      - AUDIT_EMAIL_FROM=${AUDIT_EMAIL_FROM:-notifications@vistula.network}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    ports:
+      - "8080:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

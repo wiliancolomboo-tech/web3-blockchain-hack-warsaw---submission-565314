@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  aegis-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegispay-daemon
+    restart: always
+    environment:
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - SOLANA_WS_RPC_URL=wss://api.devnet.solana.com
+      - AEGIS_PROGRAM_ID=Aegis11111111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - NOTIFICATION_EMAIL=${NOTIFICATION_EMAIL}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

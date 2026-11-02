@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  vistula-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vistula_enterprise_daemon
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - VISTULA_PROGRAM_ID=Vist111111111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

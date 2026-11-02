@@ -1,0 +1,23 @@
++-----------------------------------------------------------------------------------+
+|                           AEGISSTREAM INTEGRATION TOPOLOGY                        |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [Enterprise ERP / Web Client]                                                   |
+|             |                                                                     |
+|             v (HTTPS / RPC)                                                       |
+|  +-------------------------------------+                                         |
+|  |     Solana RPC Node (Helius/Triton) | <====== (WebSocket Log Stream: wss://)   |
+|  +-------------------------------------+                            |             |
+|             |                                                       |             |
+|             v                                                       v             |
+|  +-------------------------------------+               +-----------------------+  |
+|  |   AegisStream Anchor Smart Contract |               | Aegis Automation Host |  |
+|  |   - PDA Vault Management            |               | - Crank Worker        |  |
+|  |   - Deterministic Timelock Guards   |               | - Signature Watcher   |  |
+|  +-------------------------------------+               +-----------------------+  |
+|                                                                 |      |          |
+|                                         +-----------------------+      |          |
+|                                         |                              v          |
+|                                         v                     [Resend Mail API]   |
+|                              [Slack / Discord Webhooks]       (Signed Audit Logs) |
++-----------------------------------------------------------------------------------+

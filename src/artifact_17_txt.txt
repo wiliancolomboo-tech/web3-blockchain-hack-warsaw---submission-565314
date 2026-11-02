@@ -1,0 +1,4 @@
+2/ Why does Web3 hackathon judging need cryptography?
+
+🛡️ Blind Commitments: Hackers commit SHA-256 hashes of repos/salts. Preimages are revealed only after submission deadlines, stopping mempool idea theft.
+⚖️ Deterministic Multi-Judge Quorum: Once voting thresholds hit, CPI unlocks the vault!

@@ -1,0 +1,6 @@
+SOLANA_RPC_HTTP="https://api.devnet.solana.com"
+SOLANA_RPC_WS="wss://api.devnet.solana.com"
+AEGIS_PROGRAM_ID="Aegis111111111111111111111111111111111111111"
+DISCORD_WEBHOOK_URL="https://api.example.com/webhooks/alerts/placeholder"
+RESEND_API_KEY="re_test_123456789"
+NOTIFICATION_EMAIL="sponsor-grants@warsaw-hack.io"

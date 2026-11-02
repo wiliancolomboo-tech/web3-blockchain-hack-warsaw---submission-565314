@@ -1,0 +1,7 @@
+PORT=8080
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_WS_URL=wss://api.devnet.solana.com
+PROGRAM_ID=Vist111111111111111111111111111111111111111
+RESEND_API_KEY=re_enterprise_live_key_9872134
+AUDIT_NOTIFICATION_EMAIL=audit-treasury@enterprise.org
+AUDIT_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

@@ -1,0 +1,9 @@
+{
+  "status": "UP",
+  "programId": "VeriS11111111111111111111111111111111111111",
+  "network": "devnet",
+  "rpcLatencyMs": 32,
+  "slot": 284910284,
+  "uptimeSeconds": 104200,
+  "disbursementsProcessed": 48
+}

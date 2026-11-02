@@ -1,0 +1,6 @@
+1/3 🇵🇱 Built live at @BlockchainWarsaw: Introducing Vistula Protocol (@VistulaEngine) — the zero-trust milestone escrow & instant settlement engine powering high-velocity Web3 hackathons & grants on @solana. ⚡️
+
+2/3 🛠️ No more weeks of delayed hackathon payouts. Vistula enforces cryptographic SHA-256 milestone verification, non-custodial PDA vault disbursement, and enterprise telemetry hooks sending instant email proofs via @resend and live Discord notifications. Sub-second finality with 0 custodial risk. 🔒
+
+3/3 👨‍💻 100% open-source, full Anchor test suite passed, turnkey Dockerized off-chain relayer daemon ready for immediate sponsor handover. Try the testnet deployment now! 🚀 
+Repo & Specs: https://github.com/vistula-protocol/vistula-engine #Solana #BlockchainHackWarsaw #SolanaDevs

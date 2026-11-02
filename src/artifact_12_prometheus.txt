@@ -1,0 +1,3 @@
+vistula_events_processed_total 42
+  vistula_funds_settled_tokens_total 1250000
+  vistula_last_rpc_latency_ms 34

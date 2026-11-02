@@ -1,0 +1,5 @@
+3/3 🌐 Fully open-source, turnkey dockerized, and ready for institutional treasury operations.
+
+Contractors get guaranteed liquidity, CFOs get zero prepayment risk, and audit teams get immutable logs.
+
+Check out our submission repository and run the test matrix: https://github.com/aegis-pay/protocol 🚀🇵🇱

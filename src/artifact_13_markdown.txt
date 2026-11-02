@@ -1,0 +1,20 @@
+🧵 1/3
+Proud to announce WarsawProtocol: The Enterprise Grant & Hackathon Settlement Layer for @Solana. 
+
+Hackathon payouts shouldn’t take 60 days on centralized multisigs. WarsawProtocol brings non-custodial PDA vault escrows, cryptographic multi-judge consensus, and sub-second automated prize claims to Web3. ⚡️🇵🇱
+
+#Solana #BlockchainHackWarsaw #SolanaDevelopers
+
+🧵 2/3
+Under the hood:
+🔒 Strict Anchor PDA escrow vaults with checked safe arithmetic
+⚖️ On-chain blind score aggregation & threshold quorum enforcement
+🔄 Real-time Enterprise Event Bridge dispatching live proofs to Slack, Discord & @resend
+
+Zero custodial risk for sponsors. Guaranteed instant liquidity for builders.
+
+🧵 3/3
+Complete test coverage, verifiable Anchor build, turnkey Docker deployment, and CLI tooling ready for enterprise sponsor handover. 
+
+Building the gold standard for global hackathon settlements on Solana.
+Inspect the open-source code & architecture: https://github.com/WarsawProtocol/sol-bounty-engine 🚀

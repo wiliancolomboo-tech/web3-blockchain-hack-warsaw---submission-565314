@@ -1,43 +1,36 @@
 flowchart TD
-    subgraph ClientLayer["Client & Keeper Layer"]
-        UserA["Trader A (Bid)"]
-        UserB["Trader B (Ask)"]
-        JIT["JIT Solver / Market Maker"]
-        Keeper["Permissionless Crank / Keeper"]
-        Pyth["Pyth Price Feed Oracle"]
+    %% Actors
+    Sponsor[Enterprise Sponsor]
+    Contributor[Selected Contributor]
+    Arbiter[Institutional Arbiter]
+    Contract[Solana Program: Varsovia StreamSafe]
+    VaultPDA[Vault Account PDA]
+    Listener[Gateway Automation Worker]
+    EnterpriseNotifs[Enterprise Notification Matrix: Resend / Slack / Discord]
+
+    %% Step 1: Initialization
+    Sponsor -->|1. initialize_escrow: deposit lamports & define milestones| Contract
+    Contract -->|Allocates PDA & transfers funds| VaultPDA
+    Contract -.->|Emits EscrowInitializedEvent| Listener
+
+    %% Step 2: Submission
+    Contributor -->|2. submit_deliverable: milestone_idx, sha256_hash, uri| Contract
+    Contract -.->|Emits DeliverableSubmittedEvent| Listener
+
+    %% Step 3: Evaluation
+    alt Approval Path
+        Sponsor -->|3a. approve_milestone: verifies hash & approves release| Contract
+        Contract -->|Transfers milestone tranche lamports| Contributor
+        Contract -.->|Emits MilestoneReleasedEvent| Listener
+    else Dispute Path
+        Sponsor -->|3b. raise_dispute: locks escrow pending arbitration| Contract
+        Contract -.->|Emits DisputeRaisedEvent| Listener
+        Arbiter -->|3c. resolve_dispute: split or refund funds| Contract
+        Contract -->|Distributes lamports to Contributor/Sponsor| VaultPDA
+        Contract -.->|Emits DisputeResolvedEvent| Listener
     end
 
-    subgraph OnChainState["Solana Program: Vistula Engine"]
-        Config["Protocol Config PDA\n[seeds: 'config']\n- Authority, Fee Bps, Min Batch Interval"]
-        BatchPDA["Batch State PDA\n[seeds: 'batch', batch_id]\n- State: Open | Locked | Settled | Refundable\n- Aggregate Bids / Asks\n- Expiry Slot"]
-        VaultA["Vault Token A PDA\n[seeds: 'vault', batch_id, token_a_mint]"]
-        VaultB["Vault Token B PDA\n[seeds: 'vault', batch_id, token_b_mint]"]
-        UserEscrowA["Escrow Record A PDA\n[seeds: 'order', batch_id, user_a]"]
-        UserEscrowB["Escrow Record B PDA\n[seeds: 'order', batch_id, user_b]"]
-    end
-
-    subgraph SettlementEngine["Atomic Execution & CPI Pipeline"]
-        TokenProg["SPL Token Program / Token-2022"]
-        StateTransitions{"Batch State Check"}
-    end
-
-    %% User deposits
-    UserA -->|"1. commit_order(Token A, Min Out)"| UserEscrowA
-    UserA -.->|"SPL CPI: Transfer Token A"| VaultA
-    UserB -->|"1. commit_order(Token B, Min Out)"| UserEscrowB
-    UserB -.->|"SPL CPI: Transfer Token B"| VaultB
-
-    %% State flow
-    BatchPDA --> StateTransitions
-    StateTransitions -->|"Slot > Batch.expiry_slot"| BatchPDA
-
-    %% Keeper & Settlement
-    Keeper -->|"2. lock_batch()"| BatchPDA
-    Pyth -.->|"Validate Price Bounds"| Keeper
-    JIT -->|"3. inject_jit_liquidity()"| VaultA
-    Keeper -->|"4. settle_batch_atomic(UCP)"| BatchPDA
-
-    BatchPDA -->|"SPL CPI: Pay Fill"| UserA
-    BatchPDA -->|"SPL CPI: Pay Fill"| UserB
-    BatchPDA -->|"SPL CPI: Crank Bounty"| Keeper
-    BatchPDA -->|"SPL CPI: JIT Return + Fee"| JIT
+    %% Webhook Processing
+    Listener -->|Formats Rich Embeds / JSON Payload| EnterpriseNotifs
+    EnterpriseNotifs -->|Dispatches Transactional Emails| Sponsor
+    EnterpriseNotifs -->|Broadcasts Alert| Contributor

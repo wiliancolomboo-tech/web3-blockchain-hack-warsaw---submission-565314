@@ -1,0 +1,15 @@
+1/3 🛡️ Excited to unveil SolSentinel for Blockchain Hack Warsaw! 🇵🇱⚡
+
+DeFi exploits on Solana drain vaults in milliseconds—faster than any human on-call can react. 
+
+We built the first autonomous on-chain Circuit Breaker & sliding-window velocity guard powered by Anchor. 🧵👇
+
+2/3 ⚙️ How it works:
+1️⃣ On-chain Anchor guard tracks sliding-window withdrawal limits deterministically.
+2️⃣ If an exploit exceeds velocity limits, it auto-locks the pool in the SAME slot.
+3️⃣ Real-time notifications fire instantly via @resend & SecOps Discord webhooks.
+
+3/3 📦 Zero theoretical stubs: 100% test coverage, turnkey Docker deployment, and complete open-source code ready for mainnet vaults.
+
+Check out our submission for Blockchain Hack Warsaw! Built for the future of resilient Solana DeFi. 🚀🦀
+#Solana #SolanaDev #BlockchainHackWarsaw #DeFiSecurity

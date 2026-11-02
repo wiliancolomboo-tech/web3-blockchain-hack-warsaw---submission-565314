@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  aegis-crank-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegis_crank_service
+    restart: unless-stopped
+    environment:
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - PROGRAM_ID=Aegis111111111111111111111111111111111111111
+      - CRANK_KEYPAIR_PATH=/usr/src/app/crank-keypair.json
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AUDIT_EMAIL_TO=${AUDIT_EMAIL_TO}
+    volumes:
+      - ./crank-keypair.json:/usr/src/app/crank-keypair.json:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

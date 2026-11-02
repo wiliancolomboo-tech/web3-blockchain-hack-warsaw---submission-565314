@@ -1,0 +1,8 @@
+{
+  "status": "HEALTHY",
+  "uptime_seconds": 84120,
+  "solana_slot_height": 284192019,
+  "active_subscriptions": 1,
+  "events_processed": 142,
+  "resend_delivery_rate": "100%"
+}

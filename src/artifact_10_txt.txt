@@ -1,0 +1,1 @@
+### 6.2 Healthcheck & Telemetry Endpoint Implementation (`client/server.ts`)

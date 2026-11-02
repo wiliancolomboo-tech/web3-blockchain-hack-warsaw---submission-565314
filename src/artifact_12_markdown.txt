@@ -1,0 +1,14 @@
+### Incident Response & Runbook
+
+1. **RPC Desynchronization / Drop**:
+   - The Relayer handles automatic WebSocket reconnections. If the WebSocket disconnects, run:
+     `docker-compose restart solvigil-sentinel`
+2. **Disputed Milestone Triage**:
+   - Step 1: Admin or Beneficiary inspects event hash payload via the Resend audit email.
+   - Step 2: Arbitrator queries on-chain state:
+     `solvigil-cli query-escrow -e <ESCROW_PDA>`
+   - Step 3: Council casts resolution verdict:
+     `anchor run resolve --escrow <PDA> --milestone <IDX> --verdict approve|reject`
+3. **Emergency Clawback Procedure**:
+   - In case of project abandonment after milestone expiry, run:
+     `solvigil-cli clawback --keypair ./admin-keypair.json --escrow-state <ESCROW_PDA>`

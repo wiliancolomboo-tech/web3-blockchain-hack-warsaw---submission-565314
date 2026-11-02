@@ -1,0 +1,7 @@
+---
+
+## 6. Sponsor Handover & Turnkey Operations
+
+### 6.1 Deterministic Docker Infrastructure
+
+#### `Dockerfile`

@@ -1,0 +1,8 @@
+1/3 🛡️ Excited to unveil AegisSettler at Blockchain Hack Warsaw! Institutional B2B settlements on @Solana shouldn't rely on trust or clumsy escrow setups. We built a non-custodial milestone vault protocol powered by Anchor PDAs, zero-risk token locking, & automated settlement. 🇵🇱⚡
+
+2/3 📦 What makes AegisSettler enterprise-ready?
+✅ Program-Derived Vault Authority for 100% trustless token custody
+✅ Deterministic timelock cancellations & multi-sig arbitration
+✅ Zero-latency off-chain alerts with @resend transactional receipts + Discord & Slack pipes
+
+3/3 💻 100% open-source, fully tested, and ready to deploy with 1-click Docker orchestration. Huge thanks to the mentors and organizers at Blockchain Hack Warsaw! Check out our submission repository & architecture specs: https://github.com/aegis-settler/protocol 🚀 #Solana #SolanaWarsaw #Web3

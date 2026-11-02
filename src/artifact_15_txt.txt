@@ -1,0 +1,8 @@
+2/3 ⚙️ Under the hood of Warsaw Sentinel:
+🔒 Non-custodial PDA vault isolation
+📝 SHA-256 deliverable commitments
+⏳ Programmatic timelock dispute fail-safes
+⚡ <400ms finality with <$0.0005 gas
+🔔 Instant off-chain ERP auditing via @resend & Slack webhooks
+
+Zero trust assumptions. 100% deterministic code.

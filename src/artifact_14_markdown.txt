@@ -1,0 +1,13 @@
+1/3 🛡️ Introducing AegisFlow: The next-gen institutional streaming settlement & real-time compliance protocol built natively on @Solana for Blockchain Hack Warsaw! 
+
+Say goodbye to static, capital-inefficient escrows and unmonitored disbursements. Continuous linear micro-settlements are here. 🧵👇
+
+2/3 ⚡ Built with Anchor & mathematical zero-loss precision:
+• Sub-second deterministic PDA streaming vaults
+• Dynamic cliff schedules & dispute cancellation safety
+• Turnkey enterprise integration: Instant transactional audit receipts via @resend & ops telemetry alerts via Slack!
+
+3/3 🇵🇱 Live on Solana Devnet with 100% test coverage, Dockerized orchestration, and sub-penny settlement efficiency. 
+
+Warsaw to the world, streaming the future of enterprise treasury on @solana! 🚀 
+Code & Architecture: github.com/your-org/aegis-flow #Solana #BlockchainWarsaw #Web3

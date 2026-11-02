@@ -1,364 +1,188 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { VistulaEngine } from "../target/types/vistula_engine";
-import {
-  createMint,
-  createAccount,
-  mintTo,
-  getAccount,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
-import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import { PublicKey, Keypair, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { expect } from "chai";
+import crypto from "crypto";
 
-describe("vistula-engine QA Test Matrix", () => {
+describe("Warsaw StreamShield Contract Suite", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.VistulaEngine as Program<VistulaEngine>;
+  // Access the compiled program
+  const program = anchor.workspace.Streamshield as Program<any>;
 
-  let authority = Keypair.generate();
-  let feeReceiver = Keypair.generate();
-  let traderA = Keypair.generate(); // Buyer (bids Token A for Token B)
-  let traderB = Keypair.generate(); // Seller (asks Token B for Token A)
-  let crankKeeper = Keypair.generate();
+  const client = Keypair.generate();
+  const vendor = Keypair.generate();
+  const arbiter = Keypair.generate();
+  const escrowId = new anchor.BN(Date.now());
 
-  let tokenAMint: PublicKey;
-  let tokenBMint: PublicKey;
+  const milestone1Amount = new anchor.BN(1 * LAMPORTS_PER_SOL);
+  const milestone2Amount = new anchor.BN(2 * LAMPORTS_PER_SOL);
+  const amounts = [milestone1Amount, milestone2Amount];
+  const titles = ["Deliverable Alpha - Core Engine", "Deliverable Beta - Enterprise API"];
 
-  let traderATokenA: PublicKey;
-  let traderATokenB: PublicKey;
-  let traderBTokenA: PublicKey;
-  let traderBTokenB: PublicKey;
-  let crankTokenA: PublicKey;
-
-  let configPda: PublicKey;
-  let configBump: number;
-
-  const batchId = new anchor.BN(42);
+  let escrowPda: PublicKey;
+  let escrowBump: number;
 
   before(async () => {
-    // Fund test wallets
-    const airdropSigners = [authority, traderA, traderB, crankKeeper];
-    for (const signer of airdropSigners) {
-      const sig = await provider.connection.requestAirdrop(
-        signer.publicKey,
-        10 * anchor.web3.LAMPORTS_PER_SOL
-      );
-      await provider.connection.confirmTransaction(sig);
-    }
+    // Airdrop funds to client and arbiter
+    const sig1 = await provider.connection.requestAirdrop(client.publicKey, 10 * LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig1);
 
-    // Create dual mints: Token A (e.g. USDC), Token B (e.g. SOL)
-    tokenAMint = await createMint(
-      provider.connection,
-      authority,
-      authority.publicKey,
-      null,
-      6
-    );
-    tokenBMint = await createMint(
-      provider.connection,
-      authority,
-      authority.publicKey,
-      null,
-      6
-    );
+    const sig2 = await provider.connection.requestAirdrop(arbiter.publicKey, 2 * LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig2);
 
-    // ATA setup
-    traderATokenA = await createAccount(provider.connection, traderA, tokenAMint, traderA.publicKey);
-    traderATokenB = await createAccount(provider.connection, traderA, tokenBMint, traderA.publicKey);
-    traderBTokenA = await createAccount(provider.connection, traderB, tokenAMint, traderB.publicKey);
-    traderBTokenB = await createAccount(provider.connection, traderB, tokenBMint, traderB.publicKey);
-    crankTokenA = await createAccount(provider.connection, crankKeeper, tokenAMint, crankKeeper.publicKey);
-
-    // Mint balances
-    await mintTo(provider.connection, authority, tokenAMint, traderATokenA, authority, 1_000_000_000); // 1000 Token A
-    await mintTo(provider.connection, authority, tokenBMint, traderBTokenB, authority, 1_000_000_000); // 1000 Token B
-
-    [configPda, configBump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("config")],
+    [escrowPda, escrowBump] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("streamshield_escrow"),
+        client.publicKey.toBuffer(),
+        escrowId.toArrayLike(Buffer, "le", 8),
+      ],
       program.programId
     );
   });
 
-  it("1. Initializes protocol global config", async () => {
+  it("Initializes the escrow and transfers 3 SOL into PDA", async () => {
     await program.methods
-      .initializeProtocol(20, 10) // 20 bps protocol fee, 10 bps crank incentive
+      .initializeEscrow(escrowId, amounts, titles)
       .accounts({
-        config: configPda,
-        authority: authority.publicKey,
-        feeReceiver: feeReceiver.publicKey,
+        escrowAccount: escrowPda,
+        client: client.publicKey,
+        vendor: vendor.publicKey,
+        arbiter: arbiter.publicKey,
         systemProgram: SystemProgram.programId,
       })
-      .signers([authority])
+      .signers([client])
       .rpc();
 
-    const configAccount = await program.account.protocolConfig.fetch(configPda);
-    expect(configAccount.authority.toBase58()).to.equal(authority.publicKey.toBase58());
-    expect(configAccount.protocolFeeBps).to.equal(20);
-    expect(configAccount.crankFeeBps).to.equal(10);
+    const escrowData = await program.account.escrowAccount.fetch(escrowPda);
+    expect(escrowData.client.toBase58()).to.equal(client.publicKey.toBase58());
+    expect(escrowData.vendor.toBase58()).to.equal(vendor.publicKey.toBase58());
+    expect(escrowData.arbiter.toBase58()).to.equal(arbiter.publicKey.toBase58());
+    expect(escrowData.totalAmount.toNumber()).to.equal(3 * LAMPORTS_PER_SOL);
+    expect(escrowData.remainingBalance.toNumber()).to.equal(3 * LAMPORTS_PER_SOL);
+    expect(escrowData.isDisputed).to.equal(false);
+    expect(escrowData.milestones.length).to.equal(2);
+
+    const pdaLamports = await provider.connection.getBalance(escrowPda);
+    expect(pdaLamports).to.be.gte(3 * LAMPORTS_PER_SOL);
   });
 
-  it("2. Spawns an atomic batch auction session", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    const [vaultAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenAMint.toBuffer()],
-      program.programId
-    );
-    const [vaultBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenBMint.toBuffer()],
-      program.programId
-    );
+  it("Allows vendor to submit a deliverable SHA256 digest for Milestone 0", async () => {
+    const deliverableHash = crypto.createHash("sha256").update("Alpha Release Codebase v1.0.0").digest();
 
     await program.methods
-      .initializeBatch(batchId, new anchor.BN(3)) // 3 slots duration
+      .submitDeliverable(0, Array.from(deliverableHash))
       .accounts({
-        batch: batchPda,
-        config: configPda,
-        tokenAMint,
-        tokenBMint,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        creator: authority.publicKey,
-        systemProgram: SystemProgram.programId,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+        escrowAccount: escrowPda,
+        vendor: vendor.publicKey,
       })
-      .signers([authority])
+      .signers([vendor])
       .rpc();
 
-    const batchData = await program.account.batchStateAccount.fetch(batchPda);
-    expect(batchData.batchId.toNumber()).to.equal(42);
-    expect(batchData.state).to.deep.equal({ open: {} });
+    const escrowData = await program.account.escrowAccount.fetch(escrowPda);
+    expect(escrowData.milestones[0].status).to.deep.equal({ submitted: {} });
+    expect(escrowData.milestones[0].deliverableHash).to.deep.equal(Array.from(deliverableHash));
   });
 
-  it("3. Commits Bid and Ask orders into non-custodial PDA escrows", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    const [vaultAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenAMint.toBuffer()],
-      program.programId
-    );
-    const [vaultBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenBMint.toBuffer()],
-      program.programId
-    );
+  it("Allows client to release Milestone 0 and transfers 1 SOL to vendor", async () => {
+    const vendorBalBefore = await provider.connection.getBalance(vendor.publicKey);
 
-    const [orderAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("order"), batchId.toArrayLike(Buffer, "le", 8), traderA.publicKey.toBuffer()],
-      program.programId
-    );
-
-    const [orderBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("order"), batchId.toArrayLike(Buffer, "le", 8), traderB.publicKey.toBuffer()],
-      program.programId
-    );
-
-    // Trader A commits 100 USDC (Token A) looking for at least 95 SOL units (Token B)
     await program.methods
-      .commitOrder(batchId, true, new anchor.BN(100_000_000), new anchor.BN(95_000_000))
+      .releaseMilestone(0)
       .accounts({
-        batch: batchPda,
-        order: orderAPda,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        traderTokenAccount: traderATokenA,
-        trader: traderA.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
+        escrowAccount: escrowPda,
+        client: client.publicKey,
+        vendor: vendor.publicKey,
       })
-      .signers([traderA])
+      .signers([client])
       .rpc();
 
-    // Trader B commits 100 SOL units (Token B) looking for at least 95 USDC (Token A)
-    await program.methods
-      .commitOrder(batchId, false, new anchor.BN(100_000_000), new anchor.BN(95_000_000))
-      .accounts({
-        batch: batchPda,
-        order: orderBPda,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        traderTokenAccount: traderBTokenB,
-        trader: traderB.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([traderB])
-      .rpc();
+    const vendorBalAfter = await provider.connection.getBalance(vendor.publicKey);
+    expect(vendorBalAfter - vendorBalBefore).to.equal(1 * LAMPORTS_PER_SOL);
 
-    const vaultABal = await getAccount(provider.connection, vaultAPda);
-    const vaultBBal = await getAccount(provider.connection, vaultBPda);
-    expect(Number(vaultABal.amount)).to.equal(100_000_000);
-    expect(Number(vaultBBal.amount)).to.equal(100_000_000);
+    const escrowData = await program.account.escrowAccount.fetch(escrowPda);
+    expect(escrowData.milestones[0].status).to.deep.equal({ approved: {} });
+    expect(escrowData.remainingBalance.toNumber()).to.equal(2 * LAMPORTS_PER_SOL);
   });
 
-  it("4. Locks the batch upon slot expiration", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
+  it("Prevents non-client from releasing milestones", async () => {
+    const maliciousActor = Keypair.generate();
+    const sig = await provider.connection.requestAirdrop(maliciousActor.publicKey, 1 * LAMPORTS_PER_SOL);
+    await provider.connection.confirmTransaction(sig);
 
-    // Wait until slots advance past expiry
-    let batch = await program.account.batchStateAccount.fetch(batchPda);
-    let currentSlot = await provider.connection.getSlot();
-    while (currentSlot <= batch.expirySlot.toNumber()) {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      currentSlot = await provider.connection.getSlot();
-    }
-
-    await program.methods
-      .lockBatch(batchId)
-      .accounts({
-        batch: batchPda,
-        caller: crankKeeper.publicKey,
-      })
-      .signers([crankKeeper])
-      .rpc();
-
-    batch = await program.account.batchStateAccount.fetch(batchPda);
-    expect(batch.state).to.deep.equal({ locked: {} });
-  });
-
-  it("5. Settles batch at Uniform Clearing Price (1:1 UCP = 1_000_000) and dispenses crank bounty", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    const [vaultAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenAMint.toBuffer()],
-      program.programId
-    );
-    const [vaultBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenBMint.toBuffer()],
-      program.programId
-    );
-
-    // Uniform Clearing Price 1.0 (represented as 1_000_000)
-    await program.methods
-      .settleBatch(batchId, new anchor.BN(1_000_000))
-      .accounts({
-        batch: batchPda,
-        config: configPda,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        crankTokenAAccount: crankTokenA,
-        crank: crankKeeper.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([crankKeeper])
-      .rpc();
-
-    const batch = await program.account.batchStateAccount.fetch(batchPda);
-    expect(batch.state).to.deep.equal({ settled: {} });
-
-    // Crank bounty check (10 bps of 100_000_000 = 100_000)
-    const keeperBal = await getAccount(provider.connection, crankTokenA);
-    expect(Number(keeperBal.amount)).to.equal(100_000);
-  });
-
-  it("6. Traders claim filled outputs atomically under slippage boundaries", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    const [vaultAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenAMint.toBuffer()],
-      program.programId
-    );
-    const [vaultBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenBMint.toBuffer()],
-      program.programId
-    );
-
-    const [orderAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("order"), batchId.toArrayLike(Buffer, "le", 8), traderA.publicKey.toBuffer()],
-      program.programId
-    );
-
-    const [orderBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("order"), batchId.toArrayLike(Buffer, "le", 8), traderB.publicKey.toBuffer()],
-      program.programId
-    );
-
-    // Trader A claims Token B fill
-    await program.methods
-      .claimOrderFill(batchId)
-      .accounts({
-        batch: batchPda,
-        order: orderAPda,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        traderReceiveAccount: traderATokenB,
-        trader: traderA.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([traderA])
-      .rpc();
-
-    const traderABal = await getAccount(provider.connection, traderATokenB);
-    expect(Number(traderABal.amount)).to.equal(100_000_000);
-
-    // Trader B claims Token A fill
-    await program.methods
-      .claimOrderFill(batchId)
-      .accounts({
-        batch: batchPda,
-        order: orderBPda,
-        vaultA: vaultAPda,
-        vaultB: vaultBPda,
-        traderReceiveAccount: traderBTokenA,
-        trader: traderB.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([traderB])
-      .rpc();
-
-    const traderBBal = await getAccount(provider.connection, traderBTokenA);
-    expect(Number(traderBBal.amount)).to.equal(100_000_000);
-  });
-
-  it("7. Fails gracefully when attempting to double-claim", async () => {
-    const [batchPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("batch"), batchId.toArrayLike(Buffer, "le", 8)],
-      program.programId
-    );
-    const [vaultAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenAMint.toBuffer()],
-      program.programId
-    );
-    const [vaultBPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), batchId.toArrayLike(Buffer, "le", 8), tokenBMint.toBuffer()],
-      program.programId
-    );
-    const [orderAPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("order"), batchId.toArrayLike(Buffer, "le", 8), traderA.publicKey.toBuffer()],
-      program.programId
-    );
-
-    let failed = false;
     try {
       await program.methods
-        .claimOrderFill(batchId)
+        .releaseMilestone(1)
         .accounts({
-          batch: batchPda,
-          order: orderAPda,
-          vaultA: vaultAPda,
-          vaultB: vaultBPda,
-          traderReceiveAccount: traderATokenB,
-          trader: traderA.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
+          escrowAccount: escrowPda,
+          client: maliciousActor.publicKey,
+          vendor: vendor.publicKey,
         })
-        .signers([traderA])
+        .signers([maliciousActor])
         .rpc();
+      expect.fail("Should have thrown unauthorized client error");
     } catch (err: any) {
-      failed = true;
-      expect(err.error.errorCode.code).to.equal("OrderAlreadyClaimed");
+      expect(err.toString()).to.include("UnauthorizedClient");
     }
-    expect(failed).to.be.true;
+  });
+
+  it("Allows client to raise a dispute, locking any further releases", async () => {
+    await program.methods
+      .raiseDispute()
+      .accounts({
+        escrowAccount: escrowPda,
+        caller: client.publicKey,
+      })
+      .signers([client])
+      .rpc();
+
+    const escrowData = await program.account.escrowAccount.fetch(escrowPda);
+    expect(escrowData.isDisputed).to.equal(true);
+
+    // Attempting release now must fail
+    try {
+      await program.methods
+        .releaseMilestone(1)
+        .accounts({
+          escrowAccount: escrowPda,
+          client: client.publicKey,
+          vendor: vendor.publicKey,
+        })
+        .signers([client])
+        .rpc();
+      expect.fail("Should have failed due to active dispute");
+    } catch (err: any) {
+      expect(err.toString()).to.include("EscrowInDispute");
+    }
+  });
+
+  it("Enforces authorized arbiter resolution to partition remaining balance (1 SOL client, 1 SOL vendor)", async () => {
+    const clientBalBefore = await provider.connection.getBalance(client.publicKey);
+    const vendorBalBefore = await provider.connection.getBalance(vendor.publicKey);
+
+    const refundToClient = new anchor.BN(1 * LAMPORTS_PER_SOL);
+    const payoutToVendor = new anchor.BN(1 * LAMPORTS_PER_SOL);
+
+    await program.methods
+      .resolveDispute(refundToClient, payoutToVendor)
+      .accounts({
+        escrowAccount: escrowPda,
+        arbiter: arbiter.publicKey,
+        client: client.publicKey,
+        vendor: vendor.publicKey,
+      })
+      .signers([arbiter])
+      .rpc();
+
+    const clientBalAfter = await provider.connection.getBalance(client.publicKey);
+    const vendorBalAfter = await provider.connection.getBalance(vendor.publicKey);
+
+    expect(clientBalAfter - clientBalBefore).to.equal(1 * LAMPORTS_PER_SOL);
+    expect(vendorBalAfter - vendorBalBefore).to.equal(1 * LAMPORTS_PER_SOL);
+
+    const escrowData = await program.account.escrowAccount.fetch(escrowPda);
+    expect(escrowData.remainingBalance.toNumber()).to.equal(0);
+    expect(escrowData.isDisputed).to.equal(false);
   });
 });

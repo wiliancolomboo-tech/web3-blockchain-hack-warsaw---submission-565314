@@ -1,0 +1,7 @@
+{
+  "status": "healthy",
+  "protocol": "varsovia_streamsafe",
+  "network": "solana-devnet",
+  "activeListener": true,
+  "timestamp": 1716281000
+}

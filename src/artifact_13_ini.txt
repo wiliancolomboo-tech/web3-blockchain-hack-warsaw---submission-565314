@@ -1,0 +1,12 @@
+# Solana Network Settings
+SOLANA_RPC_URL=https://api.devnet.solana.com
+SOLANA_WS_URL=wss://api.devnet.solana.com
+PROGRAM_ID=VarsV7c1g7qKzFjF9p2H8K9N7XyZ8a1B2c3D4e5F6g7H
+
+# Enterprise Notification Credentials
+RESEND_API_KEY=re_live_production_key_here
+NOTIFICATION_EMAIL=solana-bounties@varsovia.network
+SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+
+# Relayer Operational Port
+PORT=8080

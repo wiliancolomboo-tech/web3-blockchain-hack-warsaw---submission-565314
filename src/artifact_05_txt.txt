@@ -1,0 +1,15 @@
+sol-aegis/
+├── programs/
+│   └── sol_aegis/
+│       ├── Cargo.toml
+│       └── src/lib.rs
+├── relayer/
+│   ├── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── tests/
+│   └── sol_aegis.ts
+├── Dockerfile
+├── docker-compose.yml
+├── Anchor.toml
+└── README.md

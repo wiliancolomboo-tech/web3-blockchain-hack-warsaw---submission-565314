@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  verihack-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: verihack_settlement_daemon
+    restart: unless-stopped
+    environment:
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - SOLANA_WS_URL=wss://api.devnet.solana.com
+      - PROGRAM_ID=WarsawHack1111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - NOTIFICATION_EMAIL=organizers@hackwarsaw.io
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

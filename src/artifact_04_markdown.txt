@@ -1,0 +1,20 @@
+[x] Seed Collision Mitigation:
+    - StreamState seed incorporates sender, recipient, and uint64 stream_id:
+      b"stream_state" + sender.key() + recipient.key() + stream_id.to_le_bytes()
+    - Cannot collide across distinct user pairs or between multiple streams between identical parties.
+
+[x] Integer Overflow/Underflow Defense:
+    - Zero naked arithmetic operators (+, -, *, /) permitted in crate.
+    - All mathematical operations wrapped with `.checked_add()`, `.checked_sub()`, `.checked_mul()`, `.checked_div()`.
+    - Elapsed vesting calculation cast to primitive u128 before scaling to prevent 64-bit overflow during intermediate multiplication.
+
+[x] Reentrancy Guard:
+    - Solana's architectural run-time locks state during CPI.
+    - Program checks and writes state mutation (`stream.withdrawn_amount += actual_transfer`) BEFORE token transfer CPI.
+
+[x] Account Confused Deputy Defense:
+    - Strict `has_one` checks enforce relationship between `stream_state`, `escrow_vault`, `mint`, `sender`, and `recipient`.
+    - Explicit `token::mint` and `token::authority` derivation constraints prevent passing surrogate malicious token accounts.
+
+[x] Rent-Drain Clawback Defense:
+    - `CancelStream` systematically unlinks and closes both token account and PDA data account, refunding rent lamports to origin `sender`.

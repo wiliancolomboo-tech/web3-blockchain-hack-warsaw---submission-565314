@@ -1,0 +1,21 @@
+FROM node:20-slim AS builder
+
+WORKDIR /usr/src/app
+
+COPY package*.json tsconfig.json ./
+RUN npm install
+
+COPY client ./client
+COPY target/idl ./target/idl
+
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app ./
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+CMD ["node", "-r", "ts-node/register", "client/orchestrator.ts"]

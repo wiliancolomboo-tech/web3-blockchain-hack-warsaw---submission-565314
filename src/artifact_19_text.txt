@@ -1,0 +1,9 @@
+AeroBatch E2E Protocol Verification Suite
+    ✔ 1. Initializes Market Configuration (284ms)
+    ✔ 2. User A deposits Base tokens (Sells SOL) (412ms)
+    ✔ 3. User B deposits Quote tokens (Buys SOL) (398ms)
+    ✔ 4. Prevents early clearing before slot interval expiry (105ms)
+    ✔ 5. Settles Batch Auction after slot progression (540ms)
+    ✔ 6. User A Claims Settled Proceeds (378ms)
+
+  6 passing (2.8s)

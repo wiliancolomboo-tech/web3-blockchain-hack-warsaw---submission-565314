@@ -1,0 +1,118 @@
+{
+  "deliverable_id": "superteam_ee1548565314",
+  "opportunity_id": "st-73dce3a4-26f5-4f69-8315-786483c59a89",
+  "platform": "SuperteamEarn",
+  "title": "Blockchain Hack Warsaw - Submissions",
+  "url": "https://earn.superteam.fun/listings/bounty/blockchain-hack-warsaw-submissions",
+  "budget": "2,000 USDG",
+  "prize_amount": 2000.0,
+  "ecosystem": "Solana",
+  "github_url": "https://github.com/wiliancolomboo-tech/web3-blockchain-hack-warsaw---submission-565314",
+  "status": "validation_warning",
+  "validation_reports": [
+    {
+      "file": "artifact_01_mermaid.txt",
+      "language": "mermaid",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_02_toml.toml",
+      "language": "toml",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_03_toml.toml",
+      "language": "toml",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_04_toml.toml",
+      "language": "toml",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_05_rust.rs",
+      "language": "rust",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_06_json.json",
+      "language": "json",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_07_json.json",
+      "language": "json",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_08_typescript.ts",
+      "language": "typescript",
+      "valid": false,
+      "error": "Mismatched bracket '{' with ']'"
+    },
+    {
+      "file": "artifact_09_typescript.ts",
+      "language": "typescript",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_10_typescript.ts",
+      "language": "typescript",
+      "valid": false,
+      "error": "Unclosed bracket '{'"
+    },
+    {
+      "file": "artifact_11_typescript.ts",
+      "language": "typescript",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_12_dockerfile.txt",
+      "language": "dockerfile",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_13_yaml.yaml",
+      "language": "yaml",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_14_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_15_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_16_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    },
+    {
+      "file": "artifact_17_bash.sh",
+      "language": "bash",
+      "valid": true,
+      "error": null
+    }
+  ],
+  "git_initialized": true,
+  "created_at": "2026-10-11 21:58:41"
+}

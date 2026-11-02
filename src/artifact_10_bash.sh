@@ -1,8 +1,9 @@
-# Switch to Solana Devnet
-solana config set --url https://api.devnet.solana.com
+# Configure Environment
+cp .env.example .env
+# Edit RESEND_API_KEY and DISCORD_WEBHOOK_URL in .env
 
-# Fund deployment wallet
-solana airdrop 2
+# Launch Turnkey Docker Service
+docker compose up -d --build
 
-# Deploy
-anchor deploy --provider.cluster devnet
+# Inspect Daemon Execution Logs
+docker compose logs -f vistula-daemon

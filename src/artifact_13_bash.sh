@@ -1,0 +1,1 @@
+solana confirm -v <TRANSACTION_SIGNATURE>

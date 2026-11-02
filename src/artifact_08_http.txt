@@ -1,0 +1,11 @@
+GET /health
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "HEALTHY",
+  "slot": 298412948,
+  "relayerUptimeSeconds": 86400,
+  "queueLag": 0,
+  "resendConnected": true
+}

@@ -1,0 +1,8 @@
+{
+  "status": "HEALTHY",
+  "program_id": "WarsawPu1se111111111111111111111111111111111",
+  "solana_cluster": "devnet",
+  "websocket_connected": true,
+  "last_slot_indexed": 312891942,
+  "uptime_seconds": 86400
+}

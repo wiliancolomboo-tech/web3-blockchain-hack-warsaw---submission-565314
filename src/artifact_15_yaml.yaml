@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  solsentinel-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: solsentinel-daemon
+    restart: always
+    environment:
+      - PORT=8080
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - SOLANA_WS_URL=wss://api.devnet.solana.com
+      - PROGRAM_ID=Sent1neL11111111111111111111111111111111111
+      - RESEND_API_KEY=re_enterprise_live_key_here
+      - ALERT_EMAIL_RECIPIENT=security@protocol-vault.io
+      - ALERT_EMAIL_SENDER=sentinel@alerts.protocol-vault.io
+      - WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"

@@ -1,0 +1,26 @@
+FROM node:20-slim AS builder
+
+WORKDIR /usr/src/app
+
+COPY package*.json tsconfig.json ./
+RUN npm ci
+
+COPY client ./client
+
+RUN npm run build || true
+
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY --from=builder /usr/src/app/client ./client
+COPY crank-keypair.json ./crank-keypair.json
+
+ENV NODE_ENV=production
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD node -e "process.exit(0)"
+
+CMD ["npx", "ts-node", "client/crank_service.ts"]

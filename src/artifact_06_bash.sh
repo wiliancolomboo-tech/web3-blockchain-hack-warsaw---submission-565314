@@ -1,5 +1,8 @@
-# Set localnet RPC target
-solana config set --url localhost
+# Configure Solana CLI for devnet
+solana config set --url https://api.devnet.solana.com
 
-# Generate local deployment keypair if not already present
-solana-keygen new --no-bip39-passphrase --force --outfile ~/.config/solana/id.json
+# Ensure deployer wallet is funded
+solana airdrop 2
+
+# Deploy VeriHack Warsaw program to Devnet
+anchor deploy --provider.cluster devnet

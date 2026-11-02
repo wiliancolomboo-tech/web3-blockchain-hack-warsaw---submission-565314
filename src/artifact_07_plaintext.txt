@@ -1,0 +1,7 @@
+AegisFlow Batch Auction Engine Integration Tests
+    ✔ Initializes the Auction Epoch State (412ms, 16420 CU)
+    ✔ Accepts Commitments from Counter-Parties (CoW Pairing) (821ms, 21110 CU)
+    ✔ Executes Deterministic CoW Batch Clearing (2654ms, 34280 CU)
+    ✔ Allows Traders to Claim Settlement at Uniform Price (389ms, 18920 CU)
+
+  4 passing (4.3s)

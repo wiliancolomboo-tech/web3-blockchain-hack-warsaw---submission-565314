@@ -1,0 +1,6 @@
+3/3 🇵🇱 Built for high-volume enterprise commerce, grants, and B2B software contracting across the EU and globally. 
+
+Full open-source codebase, Anchor smart contracts, turnkey Docker relayer, and 100% test coverage ready for mainnet.
+
+Proudly submitted for Blockchain Hack Warsaw! 🏆
+#Solana #BlockchainHackWarsaw #Web3 #FinTech #Rust

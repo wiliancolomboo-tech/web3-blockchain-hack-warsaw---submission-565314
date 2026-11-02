@@ -1,0 +1,8 @@
+AegisStream Protocol Test Matrix
+    ✔ 1. Initializes Stream PDA and locks escrow correctly (482ms)
+    ✔ 2. Accrues unlock and allows partial withdrawal by recipient (312ms)
+    ✔ 3. Executes atomic Flash-Loan Borrow & Repay with 5 BPS fee invariant (455ms)
+    ✔ 4. Prevents unauthorized withdrawal or overdraft above mathematical ceiling (180ms)
+    ✔ 5. Cancels active stream, settles recipient and returns remaining balance to sender (390ms)
+
+  5 passing (2s)

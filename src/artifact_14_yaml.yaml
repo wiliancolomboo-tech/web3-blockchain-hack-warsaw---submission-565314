@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  aegisflow-telemetry-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aegisflow-telemetry-relay
+    restart: always
+    environment:
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - SOLANA_WS_URL=${SOLANA_WS_URL}
+      - PROGRAM_ID=${PROGRAM_ID}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - AUDIT_EMAIL_TO=${AUDIT_EMAIL_TO}
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"

@@ -1,0 +1,7 @@
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=WarsawGuardSubm1ss1on1111111111111111111111
+DISCORD_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+RESEND_API_KEY=re_123456789_abcdefg
+SENDER_EMAIL=prizes@blockchainhackwarsaw.com
+WINNER_NOTIFICATION_EMAIL=lead-architect@winningproject.io
+PORT=8080

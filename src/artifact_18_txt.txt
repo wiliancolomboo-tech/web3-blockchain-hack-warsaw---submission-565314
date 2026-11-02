@@ -1,0 +1,7 @@
+🚀 Excited to unveil SolWarsaw for @BlockchainWarsaw!
+
+Hackathon milestone evaluations & prize payouts are broken: manual review delays, opaque scoring, and locked funds.
+
+We built an open-source, on-chain attestation & deterministic PDA escrow protocol on @Solana ⚡️
+
+Here is how it works 👇

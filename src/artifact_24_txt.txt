@@ -1,0 +1,4 @@
+100% open-source, fully tested with Anchor 0.30, and turnkey dockerized with zero manual steps. 
+
+Huge thanks to the organizers & sponsors of Blockchain Hack Warsaw for pushing builder boundaries! Check out the repo & runbook below:
+🔗 https://github.com/sponsor/blockchain-hack-warsaw-submission

@@ -1,0 +1,18 @@
+🧵 1/3
+Thrilled to unveil Project Varsovia for the Blockchain Hack Warsaw! 🇵🇱⚡
+
+Enterprise payouts shouldn't be trapped between slow Web2 banking and static, risky smart contracts. We built an Autonomous Milestone Escrow Engine on @solana with zero-friction off-chain enterprise clearing.
+
+🧵 2/3
+Under the hood:
+🔒 PDA-isolated token vaults with multi-milestone releases
+⚡ Sub-second confirmation times with <$0.001 transaction cost
+⚖️ Deterministic arbitration and basis-point dispute slashing
+📡 Webhook & @resend transactional email integration for Web2 financial audits
+
+🧵 3/3
+Complete with 100% passing QA integration test suite, turnkey Docker deployment, and production-ready Anchor 0.30 Rust architecture.
+
+Building the future of programmatic European enterprise finance on Solana! 🚀
+GitHub Repo: https://github.com/project-varsovia/varsovia-protocol
+#Solana #BlockchainHackWarsaw #RustLang #Web3 #Fintech

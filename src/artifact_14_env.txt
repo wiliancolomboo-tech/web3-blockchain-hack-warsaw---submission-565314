@@ -1,0 +1,9 @@
+# Solana Network Credentials
+SOLANA_RPC_HTTP_URL=https://api.devnet.solana.com
+SOLANA_RPC_WS_URL=wss://api.devnet.solana.com
+AEGIS_PROGRAM_ID=AegisPay11111111111111111111111111111111111
+
+# Enterprise Outbound Telemetry
+SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+RESEND_API_KEY=re_1234567890abcdef
+AUDIT_EMAIL_RECIPIENT=finance-ops@enterprise-corp.com

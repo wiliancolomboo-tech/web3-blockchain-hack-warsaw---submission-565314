@@ -1,0 +1,20 @@
+🧵 1/3: Announcing Vistula Protocol 🌊🏛️ — Built at @BlockchainHack Warsaw!
+
+Decentralized milestone settlements & hackathon bounty payouts on @solana often suffer from counterparty default and manual verification. 
+
+We built the institutional answer: Dynamic Streaming Escrows with deterministic SHA-256 milestone verification! ⚡🇵🇱
+
+🧵 2/3: Under the hood of Vistula:
+⚙️ Anchor Rust program with secure PDA token vaults
+⏱️ Second-by-second linear continuous streaming
+🔐 Zero-knowledge SHA-256 commit unlocks for verifiable work
+📡 Real-time enterprise webhook telemetry powered by @resend & Discord
+
+Zero trust. Mathematical certainty. 100% test coverage. 🛡️
+
+🧵 3/3: Open-source, turnkey Dockerized orchestration, and production-ready for DAOs, grants, and enterprise treasuries.
+
+Check out our complete submission & code for #BlockchainHackWarsaw:
+🔗 GitHub: https://github.com/vistula-protocol/vistula-settlement
+
+Thank you Warsaw & the global @solana ecosystem! Let's build! 🚀🔥

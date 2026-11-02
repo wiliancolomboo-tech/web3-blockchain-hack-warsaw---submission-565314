@@ -1,0 +1,65 @@
+flowchart TD
+    subgraph Client Layer
+        Sender[Stream Sender / Creator]
+        Recipient[Stream Beneficiary]
+        Keeper[Permissionless Keeper / Liquidator]
+    end
+
+    subgraph ChronoStream Program [Anchor Program: chronostream_2022]
+        InitializeStream[ix: initialize_stream]
+        ClaimFunds[ix: claim_stream_funds]
+        TopUpStream[ix: topup_stream]
+        CancelStream[ix: cancel_stream]
+        AutoCrank[ix: keeper_crank_stream]
+        
+        subgraph Security Guards & Verifiers
+            SignerCheck[Signer Verification & State Bounds]
+            CliffGuard[Cliff Verification Engine]
+            MathGuard[Checked / Overflow-Safe Fixed-Point Math]
+            TokenProgramGuard[SPL Token vs Token-2022 Program ID Check]
+        end
+    end
+
+    subgraph Solana Storage & PDA State
+        StreamVault["PDA: Stream Vault Account<br>['vault', stream_pubkey]"]
+        StreamRegistry["PDA: Stream Registry Account<br>['chrono_stream', sender, nonce]"]
+        RecipientATA["Recipient Token Account (ATA)"]
+        SenderATA["Sender Refund ATA"]
+        KeeperBountyATA["Keeper Fee ATA"]
+    end
+
+    subgraph External Solana System
+        ClockSysvar[Clock Sysvar: unix_timestamp]
+        Token2022Program[Token-2022 / SPL-Token Program]
+    end
+
+    %% Flow interactions
+    Sender -->|1. Deposit Collateral & Set Rate| InitializeStream
+    InitializeStream --> SignerCheck
+    SignerCheck --> MathGuard
+    MathGuard -->|Initialize PDA State| StreamRegistry
+    MathGuard -->|CPI: TransferChecked to Vault| Token2022Program
+    Token2022Program -->|Lock Tokens| StreamVault
+
+    Recipient -->|2. Pull Accrued Stream| ClaimFunds
+    ClaimFunds --> CliffGuard
+    CliffGuard --> ClockSysvar
+    CliffGuard --> MathGuard
+    MathGuard -->|CPI: TransferChecked PDA Signed| Token2022Program
+    Token2022Program -->|Disburse Claimable Balance| RecipientATA
+
+    Sender -->|3. Additional Deposits| TopUpStream
+    TopUpStream --> Token2022Program
+    Token2022Program --> StreamVault
+
+    Sender -->|4. Revoke / Abort| CancelStream
+    CancelStream --> ClockSysvar
+    CancelStream --> MathGuard
+    MathGuard -->|Refund Unclaimed Remainder| SenderATA
+    MathGuard -->|Payout Claimable to Recipient| RecipientATA
+
+    Keeper -->|5. Crank Inactive / Expired Streams| AutoCrank
+    AutoCrank --> ClockSysvar
+    AutoCrank --> MathGuard
+    MathGuard -->|Keeper Tip CPI| KeeperBountyATA
+    MathGuard -->|Auto Close PDA & Reclaim Rent| Sender

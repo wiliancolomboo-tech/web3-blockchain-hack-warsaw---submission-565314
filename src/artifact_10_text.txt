@@ -1,0 +1,7 @@
+1/3 🚀 Introducing Vanguard Protocol (@VanguardSOL), built for Blockchain Hack Warsaw! Hackathon prize disbursements shouldn't take 6 weeks of spreadsheets & manual multi-sig approvals. We built an autonomous milestone escrow engine natively on @solana. 🇵🇱⚡️
+
+2/3 🛡 Non-custodial PDA prize vaults lock funds upfront. When evaluators score your milestone, settlement executes atomically with sub-second finality. Zero counterparty risk, multi-sig dispute protection, and emergency refund circuits.
+
+3/3 📡 Best part? Enterprise connectivity out-of-the-box. Every payout instantly triggers live updates to @SlackHQ war-rooms, @Discord channels, and sends verified @resend receipts straight to builders' inboxes. 
+
+Check our open-source repo & live demo: https://github.com/vanguard-protocol/warsaw-submission #Solana #WarsawBlockchainHack #Web3

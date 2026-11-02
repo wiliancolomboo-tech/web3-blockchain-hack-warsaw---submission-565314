@@ -1,0 +1,14 @@
+1/3 🌊 Introducing Vistula Protocol (@VistulaSolana) — Built for @BlockchainWarsaw!
+Enterprise escrow is broken: multi-day settlements, 3% wire fees, and paper arbitration.
+We brought deterministic, sub-second milestone escrows to @Solana with automated slashing & proof validation. ⚡🇵🇱
+
+2/3 🛠️ Under the hood:
+- Complete Anchor-based PDA vault state machines with milestone SHA-256 deliverable commitments
+- Zero-trust timeout claims: SLAs auto-release via autonomous cranks
+- Enterprise-grade sync: instant Slack & Discord alerts + @Resend PDF audit records
+
+3/3 📦 Turnkey & audited:
+- 100% pass rate across our comprehensive Anchor test suite
+- 1-click Docker Compose deploy ready for production integration
+Check out our live GitHub repo and testnet deployment for Blockchain Hack Warsaw! 🚀
+#Solana #WarsawBlockchainHack #Web3 #Rust

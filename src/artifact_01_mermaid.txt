@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph Enterprise Clients & Admin
+        P[Payer / Grantor / Enterprise Treasury]
+        R[Recipient / Contractor / Vendor]
+        ARB[Arbiter / Compliance Authority]
+    end
+
+    subgraph Solana Runtime - AegisPay Program
+        CFG[(Global Protocol PDA)]
+        ESC[(Milestone Escrow PDA)]
+        VAULT[(Vault Token Account / Lamports PDA)]
+        
+        IX_INIT[Init Escrow]
+        IX_DEPOSIT[Deposit Collateral]
+        IX_SUBMIT[Submit Milestone Deliverable]
+        IX_APPROVE[Approve & Release Milestone]
+        IX_DISPUTE[Raise Dispute]
+        IX_RESOLVE[Arbiter Resolve]
+    end
+
+    subgraph AegisPay Off-Chain Relay & Daemon
+        RPC[Solana Geyser / WebSocket RPC]
+        KEEPER[AegisPay Keeper Daemon]
+        CRON[Automated Timeout & Unlock Worker]
+    end
+
+    subgraph Enterprise Communications & Integrations
+        SLACK[Enterprise Slack Channel Webhook]
+        DISCORD[Operations Discord Channel]
+        RESEND[Resend API: Transactional Email]
+    end
+
+    P -->|1. Initialize & Fund Escrow| IX_INIT
+    P -->|Fund Escrow Vault| IX_DEPOSIT
+    IX_DEPOSIT --> VAULT
+
+    R -->|2. Submit Proof / GitHub / ERP Hash| IX_SUBMIT
+    IX_SUBMIT --> ESC
+
+    P -->|3. Approve Milestone| IX_APPROVE
+    IX_APPROVE -->|Transfer Funds to Recipient| VAULT
+    VAULT -->|Lamports/SPL| R
+
+    P -.->|Dispute Raised| IX_DISPUTE
+    ARB -->|Arbitration Resolution| IX_RESOLVE
+    IX_RESOLVE -->|Split/Refund Funds| VAULT
+
+    ESC -.->|Program Events Emitted| RPC
+    RPC -->|WebSocket Account & Event Subscription| KEEPER
+    KEEPER -->|Disbursement Notice| RESEND
+    KEEPER -->|Critical Event Alert| SLACK
+    KEEPER -->|Audit Log| DISCORD
+    CRON -->|Trigger Expired Auto-Release| IX_APPROVE

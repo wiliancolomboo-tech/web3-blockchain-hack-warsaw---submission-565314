@@ -1,0 +1,28 @@
+OPERATIONAL RUNBOOK: VERIGRANT
+                            ==============================
+           
+  [INCIDENT CLASSIFICATION]
+  ---------------------------------------------------------------------------------
+  SEV-1: RPC node desync / WebSocket stall
+  ACTION: The relay service automatically executes heartbeat reconnections. 
+          To force reconnect: `docker restart verigrant-warsaw-relay`.
+  
+  SEV-2: Evaluator key loss
+  ACTION: Multisig quorum threshold (e.g., 2-of-3) prevents deadlock. A single 
+          compromised or lost key cannot prevent milestone release or clawback.
+  
+  SEV-3: Builder deadline breach
+  ACTION: Once `Clock::get()?.unix_timestamp >= deadline`, the sponsor initiates 
+          `cancel_and_refund()`. Vault lamports return 100% to sponsor wallet.
+  ---------------------------------------------------------------------------------
+
+  [TELEMETRY HEALTHCHECK]
+  Endpoint: GET http://localhost:8080/health
+  Response:
+  {
+    "status": "healthy",
+    "network": "devnet",
+    "rpc_latency_ms": 32,
+    "last_slot_indexed": 298410291,
+    "events_processed": 142
+  }

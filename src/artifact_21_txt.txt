@@ -1,0 +1,6 @@
+Hackathon payouts are broken. Teams wait 60+ days for prize funds locked in off-chain spreadsheets and manual multisigs. 
+
+We built @MeritStream for #BlockchainHackWarsaw on @solana: 
+An autonomous milestone escrow protocol providing sub-second settlement, multi-judge attestations, and instant payouts. 🇵🇱⚡
+
+Read the breakdown 👇

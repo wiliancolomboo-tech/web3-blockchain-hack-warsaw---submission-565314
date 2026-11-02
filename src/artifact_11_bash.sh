@@ -1,0 +1,1 @@
+solana balance $(solana-keygen pubkey crank-keypair.json) --url devnet

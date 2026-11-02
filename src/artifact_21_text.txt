@@ -1,0 +1,4 @@
+2/ How SolGuard protects TVL:
+🛡️ Dynamic Velocity Engine: Calculates cumulative epoch outflow in basis points directly on Anchor PDAs.
+⚡ Millisecond Local Freezing: Trips and isolates compromised accounts instantly before total depletion.
+📡 Enterprise Incident Relays: Auto-dispatches forensic proofs to SecOps via @resend and Discord webhooks with verified slot signatures.

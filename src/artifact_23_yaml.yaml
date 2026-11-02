@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  vistula-daemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vistula-enterprise-relayer
+    restart: always
+    environment:
+      - PORT=8080
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - SOLANA_WS_URL=wss://api.devnet.solana.com
+      - PROGRAM_ID=Vist111111111111111111111111111111111111111
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - AUDIT_NOTIFICATION_EMAIL=${AUDIT_NOTIFICATION_EMAIL}
+      - AUDIT_WEBHOOK_URL=${AUDIT_WEBHOOK_URL}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

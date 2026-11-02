@@ -1,0 +1,10 @@
+stateDiagram-v2
+    [*] --> Initialized: Organizer creates Bounty (Deposit locked)
+    Initialized --> InProgress: Submitter binds to Bounty
+    InProgress --> Submitted: Submitter posts deliverable URI & hash
+    Submitted --> Approved: Arbiter/Judge attests validation
+    Submitted --> Disputed: Arbiter flags violation or fails SLA
+    Disputed --> Refunded: Admin or Timelock triggers clawback
+    Approved --> Settled: PDA dispatches balance to Submitter
+    Settled --> [*]
+    Refunded --> [*]

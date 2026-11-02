@@ -1,0 +1,9 @@
+# Network & RPC Settings
+SOLANA_NETWORK=devnet
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=Sntry7w3z7fR2b3LzXvC3P2R9qP6E5o5k1pZ4yK3mQe
+
+# Enterprise Telemetry
+RESEND_API_KEY=re_live_9a87d3e64f1bc09a87d2
+ENTERPRISE_AUDIT_EMAIL=board@treasury.enterprise.org
+DISCORD_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  aegis-daemon:
+    build:
+      context: ./daemon
+      dockerfile: Dockerfile
+    container_name: aegis-enterprise-daemon
+    restart: unless-stopped
+    environment:
+      - SOLANA_RPC_URL=https://api.devnet.solana.com
+      - SOLANA_WS_URL=wss://api.devnet.solana.com
+      - PROGRAM_ID=Aegis11111111111111111111111111111111111111
+      - SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
+      - RESEND_API_KEY=re_1234567890abcdef
+      - ALERT_EMAIL_RECIPIENT=treasury@enterprise.co
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"

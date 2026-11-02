@@ -1,0 +1,24 @@
+[toolchain]
+anchor_version = "0.30.1"
+solana_version = "1.18.18"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+anchor_shield = "8b2Yv8VvJvV5P1D3xL9vU8wK7zN9mK1jL5sW2eR4tQ6m"
+
+[programs.devnet]
+anchor_shield = "8b2Yv8VvJvV5P1D3xL9vU8wK7zN9mK1jL5sW2eR4tQ6m"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.spec.ts"
+worker = "yarn run ts-node client/worker.ts"

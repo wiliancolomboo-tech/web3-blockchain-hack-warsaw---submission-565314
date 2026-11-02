@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  wsv-sentinel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wsv-sentinel-daemon
+    restart: always
+    environment:
+      - SOLANA_RPC_URL=${SOLANA_RPC_URL}
+      - SOLANA_WS_URL=${SOLANA_WS_URL}
+      - PROGRAM_ID=${PROGRAM_ID}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - ENTERPRISE_AUDIT_EMAIL=${ENTERPRISE_AUDIT_EMAIL}
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

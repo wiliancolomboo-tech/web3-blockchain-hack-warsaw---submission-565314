@@ -1,0 +1,5 @@
+SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
+PROGRAM_ID=Aeg1sWarsawSett1ementEng1ne11111111111111111
+RESEND_API_KEY=re_live_enterprisepayloadsecret123
+AUDIT_EMAIL_RECIPIENT=settlements-compliance@enterprise.com
+SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

@@ -1,0 +1,5 @@
+💡 Under the hood of SolWarsaw:
+1️⃣ Builders lock cryptographic SHA-256 build digests directly on @Solana PDA accounts.
+2️⃣ Judges cast threshold votes (M-of-N consensus) on-chain.
+3️⃣ Zero-latency prize disbursement settles instantly from non-custodial PDA vaults to winners.
+4️⃣ Live updates stream to @resend & Slack webhooks in real-time.

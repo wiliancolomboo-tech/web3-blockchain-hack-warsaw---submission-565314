@@ -1,0 +1,7 @@
+3/ Built with zero stubs:
+✅ 100% production Anchor Rust program
+✅ End-to-end integration test suite with 100% pass rate
+✅ Turnkey Docker container with automated healthcheck probes
+
+Check out the full open-source repo & submission for Blockchain Hack Warsaw! 🚀
+#Solana #RustLang #Web3Security #BlockchainWarsaw
