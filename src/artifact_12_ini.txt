@@ -4,6 +4,6 @@ SOLANA_WS_URL="wss://api.devnet.solana.com"
 PROGRAM_ID="Hussar1111111111111111111111111111111111111"
 
 # Enterprise Comms APIs
-RESEND_API_KEY="re_live_enterprise_secret_here"
+RESEND_API_KEY="re_test_000000000000000000000000"
 SLACK_WEBHOOK_URL="https://api.example.com/webhooks/alerts/placeholder"
 AUDIT_EMAIL_TO="compliance-desk@enterprise-partner.com"

@@ -1,5 +1,5 @@
 SOLANA_RPC_URL=https://api.devnet.solana.com
 AEGIS_PROGRAM_ID=Aegis111111111111111111111111111111111111111
-RESEND_API_KEY=re_123456789abcdef012345678
+RESEND_API_KEY=re_test_000000000000000000000000
 AUDIT_EMAIL_RECIPIENT=grants-finance@enterprise.com
 DISCORD_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

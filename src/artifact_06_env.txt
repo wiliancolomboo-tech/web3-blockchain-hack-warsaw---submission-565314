@@ -3,5 +3,5 @@ SOLANA_RPC_URL=https://api.devnet.solana.com
 PROGRAM_ID=VHack11111111111111111111111111111111111111
 ADMIN_KEYPAIR_JSON=[1,2,3,...]
 DISCORD_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
-RESEND_API_KEY=re_123456789_enterprise_key
+RESEND_API_KEY=re_test_000000000000000000000000
 NOTIFICATION_EMAIL=sponsors@hackathon.warsaw

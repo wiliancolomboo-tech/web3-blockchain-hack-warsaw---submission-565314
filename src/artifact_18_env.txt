@@ -1,6 +1,6 @@
 SOLANA_RPC_URL=https://api.devnet.solana.com
 PROGRAM_ID=WarsawGate1111111111111111111111111111111111
-RESEND_API_KEY=re_enterprise_test_key_abc123
+RESEND_API_KEY=re_test_000000000000000000000000
 RESEND_FROM_EMAIL=receipts@warsawgate.io
 AUDIT_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
 CONTRIBUTOR_NOTIFY_EMAIL=dev@hackerteam.pl

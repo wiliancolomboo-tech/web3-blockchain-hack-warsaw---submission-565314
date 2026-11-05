@@ -12,7 +12,7 @@ services:
       - SOLANA_WS_URL=wss://api.devnet.solana.com
       - PROGRAM_ID=Ver1tasRkxQ8gVnmUoE2RjF4yZtB9sV8Kx1wPjN7Mno
       - SLACK_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
-      - RESEND_API_KEY=re_enterprise_key_12345
+      - RESEND_API_KEY=re_test_000000000000000000000000
       - RESEND_FROM_EMAIL=alerts@solveritas.network
       - RESEND_ALERT_TO=devops-alerts@enterprise.corp
     healthcheck:

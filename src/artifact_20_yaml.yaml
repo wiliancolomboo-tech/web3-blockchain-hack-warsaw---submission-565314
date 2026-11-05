@@ -12,7 +12,7 @@ services:
       - SOLANA_RPC_URL=https://api.devnet.solana.com
       - PROGRAM_ID=WarsawEscrow111111111111111111111111111111111
       - COMMUNICATION_WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder
-      - RESEND_API_KEY=re_enterprise_key_placeholder
+      - RESEND_API_KEY=re_test_000000000000000000000000
       - OPS_EMAIL=telemetry@blockchain-hack-warsaw.org
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

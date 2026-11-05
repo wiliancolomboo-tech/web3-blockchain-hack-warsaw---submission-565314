@@ -12,7 +12,7 @@ services:
       - SOLANA_RPC_URL=https://api.devnet.solana.com
       - SOLANA_WS_URL=wss://api.devnet.solana.com
       - PROGRAM_ID=Sent1neL11111111111111111111111111111111111
-      - RESEND_API_KEY=re_enterprise_live_key_here
+      - RESEND_API_KEY=re_test_000000000000000000000000
       - ALERT_EMAIL_RECIPIENT=security@protocol-vault.io
       - ALERT_EMAIL_SENDER=sentinel@alerts.protocol-vault.io
       - WEBHOOK_URL=https://api.example.com/webhooks/alerts/placeholder

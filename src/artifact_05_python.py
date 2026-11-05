@@ -66,7 +66,7 @@ class AegisCrankKeeper:
             logging.error(f"Error scanning program accounts: {e}")
             return []
 
-    async def fire_crank_instruction(
+    async def fire_test_000000000000000000000000(
         self,
         stream_pubkey: Pubkey,
         vault_in: Pubkey,
